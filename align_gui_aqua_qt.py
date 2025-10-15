@@ -1,5 +1,6 @@
-# align_gui_aqua_qt.py — Aqua-styled GUI (PySide6/Qt)
-# Runs the batch alignment in an external Python subprocess.
+# align_gui_aqua_qt.py — Aqua-styled GUI (PySide6/Qt) with tabs
+# Tab 1: Align (existing workflow)
+# Tab 2: .LYS file editing (functional via lys_editor_tab.py)
 #
 # Build hint:
 # pyinstaller --onefile --noconsole --name PointAlign --icon icon.ico ^
@@ -11,6 +12,9 @@
 import os, sys, datetime, subprocess
 from pathlib import Path
 from PySide6 import QtCore, QtGui, QtWidgets
+
+# NEW: import the .LYS editor tab
+from lys_editor_tab import LYSTab
 
 APP_TITLE = "Point Align"
 COMBINED_FILENAME = "session_combined.lys"
@@ -27,9 +31,11 @@ ABSOLUTE_GDS_FALLBACK = Path(r"C:\Users\gehl2\Test.GDS")  # <-- change if needed
 DEFAULT_AFTER_POINTS = "(-50,60),(70,60),(-50,-60),(70,-60)"  # TL, TR, BL, BR (µm)
 ALWAYS_AUTO_REVIEW = True
 
+
 def resource_path(rel_path: str) -> Path:
     base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
     return base / rel_path
+
 
 # ---------- External runner (only mode) ----------
 class ExternalRunner(QtCore.QThread):
@@ -46,7 +52,9 @@ class ExternalRunner(QtCore.QThread):
         # Use bundled runner script
         script_path = resource_path("point_align_batch_runner_gui.py")
         if not script_path.exists():
-            self.line_ready.emit("[ERROR] Bundled runner script not found. Rebuild with --add-data \"point_align_batch_runner_gui.py;.\".\n")
+            self.line_ready.emit(
+                "[ERROR] Bundled runner script not found. Rebuild with --add-data \"point_align_batch_runner_gui.py;.\".\n"
+            )
             self.finished_with_code.emit(1)
             return
 
@@ -59,7 +67,9 @@ class ExternalRunner(QtCore.QThread):
         cmd = None
         for cand in (["py", "-3"], ["py"], ["python3"], ["python"]):
             try:
-                subprocess.check_output(cand + ["--version"], stderr=subprocess.STDOUT, text=True, timeout=3)
+                subprocess.check_output(
+                    cand + ["--version"], stderr=subprocess.STDOUT, text=True, timeout=3
+                )
                 cmd = cand + ["-u", str(script_path), *self.argv_list]
                 break
             except Exception:
@@ -86,11 +96,12 @@ class ExternalRunner(QtCore.QThread):
                     encoding="utf-8",
                     errors="replace",
                     env=env,
-                    creationflags=0x08000000 if os.name == "nt" else 0  # CREATE_NO_WINDOW on Windows
+                    creationflags=0x08000000 if os.name == "nt" else 0,  # CREATE_NO_WINDOW on Windows
                 )
                 assert proc.stdout is not None
                 for line in proc.stdout:
-                    lf.write(line); lf.flush()
+                    lf.write(line)
+                    lf.flush()
                     self.line_ready.emit(line)
                 rc = proc.wait()
         except Exception as e:
@@ -99,6 +110,7 @@ class ExternalRunner(QtCore.QThread):
             return
 
         self.finished_with_code.emit(rc)
+
 
 # ---------- UI ----------
 class AquaHeader(QtWidgets.QWidget):
@@ -122,47 +134,97 @@ class AquaHeader(QtWidgets.QWidget):
         if "Lucida Grande" not in QtGui.QFontDatabase().families():
             font = QtGui.QFont("Segoe UI Semibold", 12)
         p.setFont(font)
-        p.drawText(QtCore.QRect(16, 0, rect.width()-32, rect.height()),
-                   QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
-                   self.title)
+        p.drawText(
+            QtCore.QRect(16, 0, rect.width() - 32, rect.height()),
+            QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
+            self.title,
+        )
+
 
 class MainWin(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
         self.setWindowTitle(APP_TITLE)
-        self.resize(1000, 820)
+        self.resize(1100, 840)
 
-        central = QtWidgets.QWidget(); self.setCentralWidget(central)
-        v = QtWidgets.QVBoxLayout(central); v.setContentsMargins(10,8,10,10); v.setSpacing(8)
+        # ==== Top-level layout ====
+        central = QtWidgets.QWidget()
+        self.setCentralWidget(central)
+        root = QtWidgets.QVBoxLayout(central)
+        root.setContentsMargins(10, 8, 10, 10)
+        root.setSpacing(8)
+        self.header = AquaHeader("Point Align")
+        root.addWidget(self.header)
 
-        self.header = AquaHeader("Point Align"); v.addWidget(self.header)
+        # Tabs
+        self.tabs = QtWidgets.QTabWidget()
+        self.tabs.setDocumentMode(True)
+        self.tabs.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
+        root.addWidget(self.tabs, 1)
 
-        panel = QtWidgets.QFrame(); v.addWidget(panel, 1); grid = QtWidgets.QGridLayout(panel)
+        # --- Tab 1: Align (existing UI) ---
+        self.align_tab = QtWidgets.QWidget()
+        self._build_align_tab(self.align_tab)
+        self.tabs.addTab(self.align_tab, "Align")
+
+        # --- Tab 2: .LYS Editing (now functional) ---
+        self.lys_tab = LYSTab(parent=self)
+        self.tabs.addTab(self.lys_tab, ".LYS file editing")
+
+        self.status = self.statusBar()
+
+    # ===============================
+    # Tab 1 — Align (existing UI)
+    # ===============================
+    def _build_align_tab(self, parent: QtWidgets.QWidget):
+        v = QtWidgets.QVBoxLayout(parent)
+        v.setContentsMargins(0, 0, 0, 0)
+        v.setSpacing(8)
+        panel = QtWidgets.QFrame()
+        v.addWidget(panel, 1)
+        grid = QtWidgets.QGridLayout(panel)
 
         # Input images
-        grp_in = QtWidgets.QGroupBox("Input Images"); grid.addWidget(grp_in, 0,0,1,2)
+        grp_in = QtWidgets.QGroupBox("Input Images")
+        grid.addWidget(grp_in, 0, 0, 1, 2)
         g1 = QtWidgets.QVBoxLayout(grp_in)
         row = QtWidgets.QHBoxLayout()
-        self.btn_add = QtWidgets.QPushButton("Add images…"); self.btn_add.clicked.connect(self.add_images)
-        row.addWidget(self.btn_add); row.addStretch(1)
-        self.lbl_clear = QtWidgets.QLabel('<a href="#">Clear list</a>'); self.lbl_clear.linkActivated.connect(self.clear_list)
-        row.addWidget(self.lbl_clear); g1.addLayout(row)
-        self.list = QtWidgets.QListWidget(); g1.addWidget(self.list)
+        self.btn_add = QtWidgets.QPushButton("Add images…")
+        self.btn_add.clicked.connect(self.add_images)
+        row.addWidget(self.btn_add)
+        row.addStretch(1)
+        self.lbl_clear = QtWidgets.QLabel('<a href="#">Clear list</a>')
+        self.lbl_clear.linkActivated.connect(self.clear_list)
+        row.addWidget(self.lbl_clear)
+        g1.addLayout(row)
+        self.list = QtWidgets.QListWidget()
+        g1.addWidget(self.list)
 
         # Output
-        grp_out = QtWidgets.QGroupBox("Output"); grid.addWidget(grp_out, 1,0,1,2)
+        grp_out = QtWidgets.QGroupBox("Output")
+        grid.addWidget(grp_out, 1, 0, 1, 2)
         g2 = QtWidgets.QHBoxLayout(grp_out)
         self.out_base = QtWidgets.QLineEdit()
-        self.btn_browse = QtWidgets.QPushButton("Browse…"); self.btn_browse.clicked.connect(self.choose_out_base)
-        g2.addWidget(QtWidgets.QLabel("Output base folder:")); g2.addWidget(self.out_base,1); g2.addWidget(self.btn_browse)
+        self.btn_browse = QtWidgets.QPushButton("Browse…")
+        self.btn_browse.clicked.connect(self.choose_out_base)
+        g2.addWidget(QtWidgets.QLabel("Output base folder:"))
+        g2.addWidget(self.out_base, 1)
+        g2.addWidget(self.btn_browse)
 
         # Run
-        grp_run = QtWidgets.QGroupBox("Run"); grid.addWidget(grp_run, 2,0,1,2)
+        grp_run = QtWidgets.QGroupBox("Run")
+        grid.addWidget(grp_run, 2, 0, 1, 2)
         g3 = QtWidgets.QVBoxLayout(grp_run)
-        self.btn_run = QtWidgets.QPushButton("Run"); self.btn_run.clicked.connect(self.run_clicked)
+        self.btn_run = QtWidgets.QPushButton("Run")
+        self.btn_run.clicked.connect(self.run_clicked)
         g3.addWidget(self.btn_run)
-        self.progress = QtWidgets.QProgressBar(); self.progress.setRange(0,0); self.progress.setVisible(False); g3.addWidget(self.progress)
-        self.log = QtWidgets.QTextEdit(); self.log.setReadOnly(True); g3.addWidget(self.log)
+        self.progress = QtWidgets.QProgressBar()
+        self.progress.setRange(0, 0)
+        self.progress.setVisible(False)
+        g3.addWidget(self.progress)
+        self.log = QtWidgets.QTextEdit()
+        self.log.setReadOnly(True)
+        g3.addWidget(self.log)
 
         # --- Non-Pengjie Wang Group Users (collapsible) ---
         self.btn_non_pw = QtWidgets.QPushButton("Non-Pengjie Wang Group Users ▼")
@@ -174,28 +236,30 @@ class MainWin(QtWidgets.QMainWindow):
         self.non_pw_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.non_pw_frame.setVisible(False)
 
-        # Tighter form layout for the Non-PW section
+        # Tighter form layout
         non_pw_layout = QtWidgets.QFormLayout(self.non_pw_frame)
         non_pw_layout.setFormAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
         non_pw_layout.setLabelAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
         non_pw_layout.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
-        non_pw_layout.setHorizontalSpacing(8)  # tighter than default (~20)
+        non_pw_layout.setHorizontalSpacing(8)
         non_pw_layout.setVerticalSpacing(6)
         non_pw_layout.setContentsMargins(6, 6, 6, 6)
 
-        # Row: custom .gds file (tighten inner spacing/margins)
+        # Row: custom .gds file
         row_gds = QtWidgets.QHBoxLayout()
         row_gds.setSpacing(6)
         row_gds.setContentsMargins(0, 0, 0, 0)
         self.gds_path = QtWidgets.QLineEdit()
         self.gds_path.setPlaceholderText("Choose a .gds to embed into the .lys for this run…")
         btn_pick_gds = QtWidgets.QPushButton("Browse…")
+
         def _pick_gds():
             p, _ = QtWidgets.QFileDialog.getOpenFileName(
                 self, "Select a GDS file", "", "GDS files (*.gds *.gds2);;All files (*.*)"
             )
             if p:
                 self.gds_path.setText(p)
+
         btn_pick_gds.clicked.connect(_pick_gds)
         row_gds.addWidget(self.gds_path, 1)
         row_gds.addWidget(btn_pick_gds, 0)
@@ -206,7 +270,7 @@ class MainWin(QtWidgets.QMainWindow):
         self.chk_custom_after.toggled.connect(self._update_after_enabled)
         non_pw_layout.addRow(self.chk_custom_after)
 
-        # Grid of spin boxes for TL, TR, BL, BR (x,y) in µm — tight grid
+        # Grid for TL/TR/BL/BR (x,y) — tight spacing
         grid_after = QtWidgets.QGridLayout()
         grid_after.setHorizontalSpacing(8)
         grid_after.setVerticalSpacing(4)
@@ -224,19 +288,17 @@ class MainWin(QtWidgets.QMainWindow):
         def mklabel(txt: str) -> QtWidgets.QLabel:
             L = QtWidgets.QLabel(txt)
             L.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
-            # Make labels compact so there isn't a big gap before the spinbox:
             L.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Preferred)
-            L.setMinimumWidth(36)   # small but readable
-            L.setStyleSheet("font-weight:600;")  # keep visual weight
+            L.setMinimumWidth(36)
+            L.setStyleSheet("font-weight:600;")
             return L
 
-        # Defaults from DEFAULT_AFTER_POINTS
+        # Defaults
         self.tl_x = mkspin(-50); self.tl_y = mkspin(60)
         self.tr_x = mkspin(70);  self.tr_y = mkspin(60)
         self.bl_x = mkspin(-50); self.bl_y = mkspin(-60)
         self.br_x = mkspin(70);  self.br_y = mkspin(-60)
 
-        # Add labels + fields, right-aligned labels, tight spacing
         grid_after.addWidget(mklabel("TL x"), 0, 0); grid_after.addWidget(self.tl_x, 0, 1)
         grid_after.addWidget(mklabel("TL y"), 0, 2); grid_after.addWidget(self.tl_y, 0, 3)
         grid_after.addWidget(mklabel("TR x"), 1, 0); grid_after.addWidget(self.tr_x, 1, 1)
@@ -246,11 +308,8 @@ class MainWin(QtWidgets.QMainWindow):
         grid_after.addWidget(mklabel("BR x"), 3, 0); grid_after.addWidget(self.br_x, 3, 1)
         grid_after.addWidget(mklabel("BR y"), 3, 2); grid_after.addWidget(self.br_y, 3, 3)
 
-        # Let the spinbox columns stretch, labels stay compact
-        grid_after.setColumnStretch(0, 0)
-        grid_after.setColumnStretch(2, 0)
-        grid_after.setColumnStretch(1, 1)
-        grid_after.setColumnStretch(3, 1)
+        grid_after.setColumnStretch(0, 0); grid_after.setColumnStretch(2, 0)
+        grid_after.setColumnStretch(1, 1); grid_after.setColumnStretch(3, 1)
 
         self.after_points_panel = QtWidgets.QWidget()
         self.after_points_panel.setLayout(grid_after)
@@ -258,11 +317,9 @@ class MainWin(QtWidgets.QMainWindow):
 
         self._update_after_enabled(False)
 
-        # Add to main grid below Run group
+        # Add to main grid
         grid.addWidget(self.btn_non_pw, 3, 0, 1, 2)
         grid.addWidget(self.non_pw_frame, 4, 0, 1, 2)
-
-        self.status = self.statusBar()
 
     # --- helpers (Non-PW panel) ---
     def _toggle_non_pw_panel(self, checked: bool):
@@ -279,10 +336,12 @@ class MainWin(QtWidgets.QMainWindow):
         tr = (self.tr_x.value(), self.tr_y.value())
         bl = (self.bl_x.value(), self.bl_y.value())
         br = (self.br_x.value(), self.br_y.value())
+
         def fmt(p): return f"({p[0]:.3f},{p[1]:.3f})"
+
         return ",".join([fmt(tl), fmt(tr), fmt(bl), fmt(br)])
 
-    # --- standard helpers ---
+    # --- standard helpers for Align tab ---
     def add_images(self):
         filt = "Images (*.jpg *.jpeg *.png *.bmp *.tif *.tiff);;All files (*.*)"
         paths, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Select images", "", filt)
@@ -366,10 +425,12 @@ class MainWin(QtWidgets.QMainWindow):
         self.progress.setVisible(False)
         self.log.append(f"\n[Process exited with code {code}]\n")
 
+
 def main():
     app = QtWidgets.QApplication(sys.argv)
     w = MainWin(); w.show()
     sys.exit(app.exec())
+
 
 if __name__ == "__main__":
     main()
