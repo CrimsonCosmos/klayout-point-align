@@ -7,10 +7,7 @@ Enhancements in this patched version:
 - --combined-out: append ALL selected/transformed images into the SAME .lys for this run
 - --auto / --auto-review: enable automatic fiducial detection (falls back to GUI on failure)
 - optional tuning flags for auto-detect: --auto-canny, --auto-thr, --auto-c, --auto-morph
-
-Works with:
-- klayout_point_align.py (patched to support _AUTO_FLAGS/_AUTO_PARAMS and optional autodetect hook)
-- autodetect_fiducials.py (new module with OpenCV-based detection)
+- NEW: --gds-file to override the <layout>/<file-path> in the .lys output
 """
 
 import argparse
@@ -124,6 +121,9 @@ def main() -> int:
     ap.add_argument("--auto-c", type=int, help="Adaptive threshold C offset (e.g. 5)")
     ap.add_argument("--auto-morph", type=int, help="Morphological close iterations (e.g. 2)")
 
+    # NEW: allow overriding the .gds path in the .lys
+    ap.add_argument("--gds-file", help="Override <layout>/<file-path> in the .lys output")
+
     args = ap.parse_args()
 
     # Reset z_position counter per run (if provided by the core module)
@@ -209,6 +209,7 @@ def main() -> int:
                 out_json=None,
                 lys_in=lys_in,
                 lys_out=lys_out,
+                gds_file=args.gds_file,  # <-- forward new arg
             )
             if isinstance(ret, tuple) and len(ret) >= 2:
                 H, rms = ret[0], ret[1]
