@@ -1,3 +1,6 @@
+As a normal user, you can ignore the files above and just download this file! 
+https://drive.google.com/file/d/1QJ8fibPSQKBjeiIqlqqGMAAmDo7sJBlj/view?usp=sharing
+
 1)	TO OPERATE VERSION 1.0:
 a.	Install Python https://www.python.org/downloads/windows/
 b.	Make sure pip is up to date by pasting python -m pip install --upgrade pip in terminal and hitting ENTER
