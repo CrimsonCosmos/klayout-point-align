@@ -20,7 +20,7 @@ PREFS_NAME = "align_gui_prefs.json"
 LYS_BASENAME = "Test_with_img.lys"
 ABSOLUTE_LYS_FALLBACK = Path(r"C:\Users\gehl2\Test_with_img.lys")
 
-# NEW: Canonical GDS for PW Group users (ship alongside app or use absolute fallback)
+# Canonical GDS for PW Group users (ship alongside app or use absolute fallback)
 GDS_BASENAME = "Test.GDS"
 ABSOLUTE_GDS_FALLBACK = Path(r"C:\Users\gehl2\Test.GDS")  # <-- change if needed
 
@@ -174,12 +174,19 @@ class MainWin(QtWidgets.QMainWindow):
         self.non_pw_frame.setFrameShape(QtWidgets.QFrame.StyledPanel)
         self.non_pw_frame.setVisible(False)
 
+        # Tighter form layout for the Non-PW section
         non_pw_layout = QtWidgets.QFormLayout(self.non_pw_frame)
-        non_pw_layout.setLabelAlignment(QtCore.Qt.AlignLeft)
         non_pw_layout.setFormAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignTop)
+        non_pw_layout.setLabelAlignment(QtCore.Qt.AlignLeft | QtCore.Qt.AlignVCenter)
+        non_pw_layout.setFieldGrowthPolicy(QtWidgets.QFormLayout.AllNonFixedFieldsGrow)
+        non_pw_layout.setHorizontalSpacing(8)  # tighter than default (~20)
+        non_pw_layout.setVerticalSpacing(6)
+        non_pw_layout.setContentsMargins(6, 6, 6, 6)
 
-        # Row: custom .gds file
+        # Row: custom .gds file (tighten inner spacing/margins)
         row_gds = QtWidgets.QHBoxLayout()
+        row_gds.setSpacing(6)
+        row_gds.setContentsMargins(0, 0, 0, 0)
         self.gds_path = QtWidgets.QLineEdit()
         self.gds_path.setPlaceholderText("Choose a .gds to embed into the .lys for this run…")
         btn_pick_gds = QtWidgets.QPushButton("Browse…")
@@ -191,7 +198,7 @@ class MainWin(QtWidgets.QMainWindow):
                 self.gds_path.setText(p)
         btn_pick_gds.clicked.connect(_pick_gds)
         row_gds.addWidget(self.gds_path, 1)
-        row_gds.addWidget(btn_pick_gds)
+        row_gds.addWidget(btn_pick_gds, 0)
         non_pw_layout.addRow("Custom GDS file:", row_gds)
 
         # Row: custom landmarker points (µm)
@@ -199,8 +206,12 @@ class MainWin(QtWidgets.QMainWindow):
         self.chk_custom_after.toggled.connect(self._update_after_enabled)
         non_pw_layout.addRow(self.chk_custom_after)
 
-        # Grid of spin boxes for TL, TR, BL, BR (x,y) in µm
+        # Grid of spin boxes for TL, TR, BL, BR (x,y) in µm — tight grid
         grid_after = QtWidgets.QGridLayout()
+        grid_after.setHorizontalSpacing(8)
+        grid_after.setVerticalSpacing(4)
+        grid_after.setContentsMargins(0, 0, 0, 0)
+
         def mkspin(default):
             sb = QtWidgets.QDoubleSpinBox()
             sb.setRange(-100000.0, 100000.0)
@@ -210,21 +221,36 @@ class MainWin(QtWidgets.QMainWindow):
             sb.setMaximumWidth(120)
             return sb
 
+        def mklabel(txt: str) -> QtWidgets.QLabel:
+            L = QtWidgets.QLabel(txt)
+            L.setAlignment(QtCore.Qt.AlignRight | QtCore.Qt.AlignVCenter)
+            # Make labels compact so there isn't a big gap before the spinbox:
+            L.setSizePolicy(QtWidgets.QSizePolicy.Policy.Fixed, QtWidgets.QSizePolicy.Policy.Preferred)
+            L.setMinimumWidth(36)   # small but readable
+            L.setStyleSheet("font-weight:600;")  # keep visual weight
+            return L
+
         # Defaults from DEFAULT_AFTER_POINTS
         self.tl_x = mkspin(-50); self.tl_y = mkspin(60)
         self.tr_x = mkspin(70);  self.tr_y = mkspin(60)
         self.bl_x = mkspin(-50); self.bl_y = mkspin(-60)
         self.br_x = mkspin(70);  self.br_y = mkspin(-60)
 
-        lab_bold = lambda s: (lambda L: (L.setStyleSheet("font-weight:600;"), L)[1])(QtWidgets.QLabel(s))
-        grid_after.addWidget(lab_bold("TL x"), 0, 0); grid_after.addWidget(self.tl_x, 0, 1)
-        grid_after.addWidget(lab_bold("TL y"), 0, 2); grid_after.addWidget(self.tl_y, 0, 3)
-        grid_after.addWidget(lab_bold("TR x"), 1, 0); grid_after.addWidget(self.tr_x, 1, 1)
-        grid_after.addWidget(lab_bold("TR y"), 1, 2); grid_after.addWidget(self.tr_y, 1, 3)
-        grid_after.addWidget(lab_bold("BL x"), 2, 0); grid_after.addWidget(self.bl_x, 2, 1)
-        grid_after.addWidget(lab_bold("BL y"), 2, 2); grid_after.addWidget(self.bl_y, 2, 3)
-        grid_after.addWidget(lab_bold("BR x"), 3, 0); grid_after.addWidget(self.br_x, 3, 1)
-        grid_after.addWidget(lab_bold("BR y"), 3, 2); grid_after.addWidget(self.br_y, 3, 3)
+        # Add labels + fields, right-aligned labels, tight spacing
+        grid_after.addWidget(mklabel("TL x"), 0, 0); grid_after.addWidget(self.tl_x, 0, 1)
+        grid_after.addWidget(mklabel("TL y"), 0, 2); grid_after.addWidget(self.tl_y, 0, 3)
+        grid_after.addWidget(mklabel("TR x"), 1, 0); grid_after.addWidget(self.tr_x, 1, 1)
+        grid_after.addWidget(mklabel("TR y"), 1, 2); grid_after.addWidget(self.tr_y, 1, 3)
+        grid_after.addWidget(mklabel("BL x"), 2, 0); grid_after.addWidget(self.bl_x, 2, 1)
+        grid_after.addWidget(mklabel("BL y"), 2, 2); grid_after.addWidget(self.bl_y, 2, 3)
+        grid_after.addWidget(mklabel("BR x"), 3, 0); grid_after.addWidget(self.br_x, 3, 1)
+        grid_after.addWidget(mklabel("BR y"), 3, 2); grid_after.addWidget(self.br_y, 3, 3)
+
+        # Let the spinbox columns stretch, labels stay compact
+        grid_after.setColumnStretch(0, 0)
+        grid_after.setColumnStretch(2, 0)
+        grid_after.setColumnStretch(1, 1)
+        grid_after.setColumnStretch(3, 1)
 
         self.after_points_panel = QtWidgets.QWidget()
         self.after_points_panel.setLayout(grid_after)
@@ -284,7 +310,7 @@ class MainWin(QtWidgets.QMainWindow):
         if p0.exists(): return str(p0)
         return str(ABSOLUTE_LYS_FALLBACK)
 
-    # NEW: default GDS resolver for PW Group users
+    # default GDS resolver for PW Group users
     def resolve_gds(self) -> str:
         p0 = resource_path(GDS_BASENAME)
         if p0.exists(): return str(p0)
