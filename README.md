@@ -1,4 +1,4 @@
-This is a program originally created at Wang Lab Group at UIUC in 2025.
+This is a program originally created at Wang Lab Group at the University of Illinois Urbana Champaign Materials Research Lab in 2025.
 
 
 The point of program is to fix the pain points involved in aligning microscope images with .gds files in KLayout.
