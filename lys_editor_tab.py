@@ -1,10 +1,12 @@
-# lys_editor_tab.py — Side-by-side .LYS tab (copy between files), raw preview only
+
+# lys_editor_tab.py — Single-mode by default, one-click Dual Mode (copy images + GDS)
 from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
 import re
 import xml.etree.ElementTree as ET
 from copy import deepcopy
+import os
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
@@ -12,8 +14,8 @@ IMG_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"}
 
 
 # ---------------- helpers ----------------
-def _parse_value_for_file_and_matrix(text: str) -> Tuple[Optional[str], Optional[Tuple[Tuple[float,float,float],Tuple[float,float,float],Tuple[float,float,float]]]]:
-    """Return (file_path, matrix3x3) from the <value> payload. Matrix kept for completeness (unused)."""
+def _parse_value_for_file_and_matrix(text: str):
+    """Return (file_path, matrix3x3 or None) parsed from <value> payload. Matrix kept for completeness (unused)."""
     if not isinstance(text, str):
         return None, None
     m_file = re.search(r"file\s*=\s*['\"]([^'\"]+)['\"]", text)
@@ -59,12 +61,21 @@ def _resolve_path(raw: str, lys_path: Optional[Path]) -> Optional[str]:
     return None
 
 
+def _set_value_file(text: str, new_path: str) -> str:
+    """Return value text with file='...' replaced safely (preserve everything else)."""
+    if ':' in new_path and '\\' in new_path:
+        new_path_escaped = new_path.replace('\\', '\\\\')
+    else:
+        new_path_escaped = new_path
+    if re.search(r"file\s*=", text):
+        return re.sub(r"file\s*=\s*(['\"]).*?\1", f"file='{new_path_escaped}'", text)
+    return text.strip() + f";file='{new_path_escaped}'"
+
+
 # ---------------- preview dialog (raw only) ----------------
 class ImagePreviewDialog(QtWidgets.QDialog):
     """Simple zoomable preview. Transform preview is intentionally disabled in this build."""
-    def __init__(self, img_path: str,
-                 H_um_from_px=None,
-                 parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(self, img_path: str, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle(f"Preview — {Path(img_path).name}")
         self.resize(1100, 780)
@@ -130,7 +141,7 @@ class ImagePreviewDialog(QtWidgets.QDialog):
         self.lbl_info.setText(f"{self._w}×{self._h}px  —  Raw pixels (transform preview disabled).  Wheel: zoom, Drag: pan")
 
 
-# ---------------- single-editor widget (old LYSTab functionality) ----------------
+# ---------------- single-editor widget with MULTI-GDS + rename ----------------
 class _SingleLYSEditor(QtWidgets.QWidget):
     fileLoaded = QtCore.Signal(str)
     fileSaved = QtCore.Signal(str)
@@ -149,11 +160,13 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._wire()
         self._update_buttons()
 
+    # ---- UI ----
     def _build_ui(self) -> None:
         v = QtWidgets.QVBoxLayout(self)
         v.setContentsMargins(0,0,0,0)
         v.setSpacing(8)
 
+        # Top: open
         grp_open = QtWidgets.QGroupBox("Open .LYS file")
         v.addWidget(grp_open)
         h = QtWidgets.QHBoxLayout(grp_open)
@@ -166,6 +179,24 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         h.addWidget(self.btn_browse)
         h.addWidget(self.btn_reload)
 
+        # MULTI-GDS controls
+        grp_gds = QtWidgets.QGroupBox("Layouts (.gds / .oasis) — multiple allowed")
+        v.addWidget(grp_gds)
+        g = QtWidgets.QGridLayout(grp_gds)
+        self.gds_list = QtWidgets.QListWidget()
+        self.gds_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.btn_gds_add = QtWidgets.QPushButton("Add…")
+        self.btn_gds_remove = QtWidgets.QPushButton("Remove")
+        self.btn_gds_rename = QtWidgets.QPushButton("Rename…")
+        self.btn_gds_open = QtWidgets.QPushButton("Open Folder")
+        g.addWidget(self.gds_list, 0, 0, 1, 6)
+        g.addWidget(self.btn_gds_add, 1, 0)
+        g.addWidget(self.btn_gds_remove, 1, 1)
+        g.addWidget(self.btn_gds_rename, 1, 2)
+        g.addWidget(self.btn_gds_open, 1, 3)
+        g.setColumnStretch(5, 1)
+
+        # Body
         body = QtWidgets.QWidget()
         v.addWidget(body, 1)
         grid = QtWidgets.QGridLayout(body)
@@ -179,23 +210,28 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.list.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.list.setAlternatingRowColors(True)
         self.list.setUniformItemSizes(True)
+        self.list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
 
         btns = QtWidgets.QVBoxLayout()
         self.btn_up = QtWidgets.QPushButton("Up")
         self.btn_down = QtWidgets.QPushButton("Down")
         self.btn_delete = QtWidgets.QPushButton("Delete")
-        for b in (self.btn_up, self.btn_down, self.btn_delete):
+        self.btn_rename = QtWidgets.QPushButton("Rename…")
+        for b in (self.btn_up, self.btn_down, self.btn_delete, self.btn_rename):
             b.setAutoDefault(False)
         btns.addWidget(self.btn_up)
         btns.addWidget(self.btn_down)
         btns.addSpacing(8)
         btns.addWidget(self.btn_delete)
+        btns.addSpacing(8)
+        btns.addWidget(self.btn_rename)
         btns.addStretch(1)
 
         grid.addWidget(QtWidgets.QLabel("Images / annotations (drag to reorder, double-click to preview raw image):"), 0, 0, 1, 2)
         grid.addWidget(self.list, 1, 0, 1, 1)
         grid.addLayout(btns, 1, 1, 1, 1)
 
+        # Save bar
         save_bar = QtWidgets.QHBoxLayout()
         self.btn_save = QtWidgets.QPushButton("Save")
         self.btn_save_as = QtWidgets.QPushButton("Save As…")
@@ -212,29 +248,189 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.btn_save_as.setShortcut(QtGui.QKeySequence("Ctrl+Shift+S"))
         self.btn_up.setShortcut(QtGui.QKeySequence("Alt+Up"))
         self.btn_down.setShortcut(QtGui.QKeySequence("Alt+Down"))
+        self.btn_rename.setShortcut(QtGui.QKeySequence("F2"))
 
     def _wire(self) -> None:
+        # File top
         self.btn_browse.clicked.connect(self._browse)
         self.btn_reload.clicked.connect(self.reload)
+        # MULTI-GDS
+        self.btn_gds_add.clicked.connect(self._gds_add)
+        self.btn_gds_remove.clicked.connect(self._gds_remove)
+        self.btn_gds_rename.clicked.connect(self._gds_rename)
+        self.btn_gds_open.clicked.connect(self._gds_open_folder)
+        self.gds_list.itemSelectionChanged.connect(self._update_buttons)
+        # List actions
         self.btn_up.clicked.connect(self._move_up)
         self.btn_down.clicked.connect(self._move_down)
         self.btn_delete.clicked.connect(self._delete)
-        self.btn_save.clicked.connect(self.save)
-        self.btn_save_as.clicked.connect(self.save_as)
+        self.btn_rename.clicked.connect(self._rename_selected_image)
         self.list.model().rowsMoved.connect(self._reordered)
         self.list.itemDoubleClicked.connect(self._preview_item)
         self.list.itemSelectionChanged.connect(self._update_buttons)
+        self.list.customContextMenuRequested.connect(self._context_menu)
         self.path_edit.returnPressed.connect(self.reload)
 
+    # ---- MULTI-GDS helpers ----
+    def _iter_layouts(self) -> List[ET.Element]:
+        if self._root is None:
+            return []
+        return [el for el in self._root.iter("layout")]
+
+    def _gds_refresh_list(self) -> None:
+        self.gds_list.clear()
+        for lay in self._iter_layouts():
+            fp = (lay.findtext("file-path") or "").strip()
+            nm = (lay.findtext("name") or "").strip()
+            label = Path(fp).name if fp else (nm or "<unnamed layout>")
+            it = QtWidgets.QListWidgetItem(label)
+            it.setToolTip(fp or nm or "")
+            it.setData(QtCore.Qt.UserRole, fp)
+            self.gds_list.addItem(it)
+
+    def _gds_add(self) -> None:
+        if self._root is None:
+            return
+        path, _ = QtWidgets.QFileDialog.getOpenFileName(self, "Add GDS", "", "Layout Files (*.gds *.gds2 *.oasis);;All files (*.*)")
+        if not path:
+            return
+        lay = ET.SubElement(self._root, "layout")
+        ET.SubElement(lay, "file-path").text = path
+        ET.SubElement(lay, "name").text = Path(path).name
+        self._gds_refresh_list()
+        self._status("Added GDS. (Remember to Save)")
+
+    def _gds_remove(self) -> None:
+        if self._root is None:
+            return
+        rows = [idx.row() for idx in self.gds_list.selectedIndexes()]
+        if not rows:
+            return
+        layouts = self._iter_layouts()
+        rows = sorted(set(rows), reverse=True)
+        for r in rows:
+            if 0 <= r < len(layouts):
+                self._root.remove(layouts[r])
+        self._gds_refresh_list()
+        self._status("Removed selected GDS. (Remember to Save)")
+
+    def _gds_rename(self) -> None:
+        rows = [idx.row() for idx in self.gds_list.selectedIndexes()]
+        if len(rows) != 1:
+            QtWidgets.QMessageBox.information(self, "Select one", "Select exactly one GDS to rename.")
+            return
+        r = rows[0]
+        layouts = self._iter_layouts()
+        if not (0 <= r < len(layouts)):
+            return
+        lay = layouts[r]
+        fp_el = lay.find("file-path")
+        if fp_el is None or not fp_el.text:
+            QtWidgets.QMessageBox.information(self, "No path", "This <layout> has no file-path.")
+            return
+        old = Path(fp_el.text)
+        new_name, ok = QtWidgets.QInputDialog.getText(self, "Rename GDS", "New filename:", text=old.name)
+        if not ok or not new_name.strip():
+            return
+        dest = old.parent / new_name.strip()
+        try:
+            old.rename(dest)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Rename failed", str(e))
+            return
+        # Update XML
+        fp_el.text = str(dest)
+        name_el = lay.find("name") or ET.SubElement(lay, "name")
+        name_el.text = dest.name
+        self._gds_refresh_list()
+        self._status(f"Renamed GDS to {dest.name}. (Remember to Save)")
+
+    def _gds_open_folder(self) -> None:
+        rows = [idx.row() for idx in self.gds_list.selectedIndexes()]
+        if len(rows) != 1:
+            return
+        layouts = self._iter_layouts()
+        r = rows[0]
+        if not (0 <= r < len(layouts)):
+            return
+        fp = (layouts[r].findtext("file-path") or "").strip()
+        if not fp:
+            return
+        folder = str(Path(fp).parent)
+        QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(folder))
+
+    # ---- Image rename ----
+    def _context_menu(self, pos: QtCore.QPoint) -> None:
+        if not self.list.selectedItems():
+            return
+        m = QtWidgets.QMenu(self)
+        a = m.addAction("Rename…")
+        a.triggered.connect(self._rename_selected_image)
+        m.exec(self.list.mapToGlobal(pos))
+
+    def _rename_selected_image(self) -> None:
+        rows = [idx.row() for idx in self.list.selectedIndexes()]
+        if len(rows) != 1:
+            QtWidgets.QMessageBox.information(self, "Select one", "Please select exactly one image to rename.")
+            return
+        item = self.list.item(rows[0])
+        elem = self._id_to_elem.get(int(item.data(QtCore.Qt.UserRole)))
+        if elem is None:
+            return
+        raw, _ = self._file_and_matrix_for_elem(elem)
+        if not raw:
+            QtWidgets.QMessageBox.warning(self, "No file", "This annotation has no file= path.")
+            return
+        resolved = _resolve_path(raw, self._current_path)
+        if not resolved:
+            QtWidgets.QMessageBox.warning(self, "Not found", f"Could not resolve on disk:\n{raw}")
+            return
+        old = Path(resolved)
+        new_name, ok = QtWidgets.QInputDialog.getText(self, "Rename image", "New filename (no path):", text=old.name)
+        if not ok or not new_name.strip():
+            return
+        dest = old.parent / new_name.strip()
+        if dest.exists():
+            resp = QtWidgets.QMessageBox.question(self, "Overwrite?", f"{dest.name} exists. Overwrite?",
+                                                  QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No, QtWidgets.QMessageBox.No)
+            if resp != QtWidgets.QMessageBox.Yes:
+                return
+        try:
+            old.rename(dest)
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(self, "Rename failed", str(e))
+            return
+        # update XML value
+        val = elem.find("value")
+        if val is not None and isinstance(val.text, str):
+            new_path = str(dest)
+            if self._current_path:
+                try:
+                    rel = os.path.relpath(new_path, start=str(self._current_path.parent))
+                    new_path = rel
+                except Exception:
+                    pass
+            val.text = _set_value_file(val.text, new_path)
+        # update UI label
+        item.setText(dest.name)
+        self._status(f"Renamed image to {dest.name}. (Remember to Save)")
+
+    # ---- Core logic ----
     def _update_buttons(self) -> None:
         has_items = self.list.count() > 0
         any_sel = len(self.list.selectedIndexes()) > 0
         self.btn_up.setEnabled(any_sel and has_items)
         self.btn_down.setEnabled(any_sel and has_items)
         self.btn_delete.setEnabled(any_sel and has_items)
-        self.btn_save.setEnabled(has_items and self._tree is not None and self._ordered_parent is not None)
-        self.btn_save_as.setEnabled(has_items and self._tree is not None and self._ordered_parent is not None)
+        self.btn_rename.setEnabled(any_sel and has_items and len(self.list.selectedIndexes()) == 1)
+        self.btn_save.setEnabled(self._tree is not None and self._ordered_parent is not None)
+        self.btn_save_as.setEnabled(self._tree is not None and self._ordered_parent is not None)
         self.btn_reload.setEnabled(self._current_path is not None and self._current_path.exists())
+
+        # GDS state
+        self.btn_gds_remove.setEnabled(len(self.gds_list.selectedIndexes()) > 0)
+        self.btn_gds_rename.setEnabled(len(self.gds_list.selectedIndexes()) == 1)
+        self.btn_gds_open.setEnabled(len(self.gds_list.selectedIndexes()) == 1)
 
     # ---------- file ops ----------
     def _browse(self) -> None:
@@ -270,6 +466,9 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._id_to_elem.clear()
         self._ordered_parent = None
         self.list.clear()
+
+        # Refresh GDS list
+        self._gds_refresh_list()
 
         elems, parent = self._find_image_elems(root)
         if not elems:
@@ -311,13 +510,13 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         f, _ = self._file_and_matrix_for_elem(elem)
         return f is not None
 
-    def _find_image_elems(self, root: ET.Element) -> Tuple[List[ET.Element], Optional[ET.Element]]:
+    def _find_image_elems(self, root: ET.Element):
         annotations = root.find(".//annotations")
         if annotations is not None:
             hits = [e for e in list(annotations) if self._is_image_elem(e)]
             if hits:
                 return hits, annotations
-        # fallback: scan anywhere and return the parent that has the most hits
+        # fallback
         parent_hits: Dict[ET.Element, List[ET.Element]] = {}
         for e in root.iter():
             if self._is_image_elem(e):
@@ -479,78 +678,109 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "Save failed", str(e))
 
 
-# ---------------- NEW: Side-by-side container as the exported LYSTab ----------------
+# ---------------- LYSTab with single/dual toggle ----------------
 class LYSTab(QtWidgets.QWidget):
-    """New .LYS tab: two editors side by side with COPY arrows to move items between sessions."""
+    """Defaults to single-editor mode. Click the big button to enable Dual Mode (copy images and GDS)."""
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
-        self._build_ui()
+        self._dual_enabled = False
+        self._outer = QtWidgets.QHBoxLayout(self)
+        self._outer.setContentsMargins(0,0,0,0)
+        self._outer.setSpacing(8)
 
-    def _build_ui(self) -> None:
-        outer = QtWidgets.QVBoxLayout(self)
-        outer.setContentsMargins(0,0,0,0)
-        outer.setSpacing(8)
-
-        panes = QtWidgets.QHBoxLayout()
-        outer.addLayout(panes, 1)
-
-        # Left editor
+        # Left: main editor
         self.left = _SingleLYSEditor(self)
-        left_box = QtWidgets.QVBoxLayout()
-        left_box.addWidget(self.left, 1)
+        self._outer.addWidget(self.left, 1)
+
+        # Right: big toggle button (visible in single mode)
+        self._right_holder = QtWidgets.QWidget(self)
+        right_layout = QtWidgets.QVBoxLayout(self._right_holder)
+        right_layout.setContentsMargins(0,0,0,0)
+        right_layout.addStretch(1)
+        self.btn_enable_dual = QtWidgets.QPushButton("Enable Dual Mode\n(Copy Images + GDS)")
+        self.btn_enable_dual.setMinimumWidth(220)
+        self.btn_enable_dual.setMinimumHeight(120)
+        self.btn_enable_dual.setStyleSheet("font-size:16px; font-weight:600;")
+        right_layout.addWidget(self.btn_enable_dual, alignment=QtCore.Qt.AlignCenter)
+        right_layout.addStretch(1)
+        self._outer.addWidget(self._right_holder, 0)
+
+        self.btn_enable_dual.clicked.connect(self._enable_dual_mode)
+
+        # Pre-create right editor and mid controls (hidden until enabled)
+        self._mid_holder = None
+        self.right = None
+        self._splitter = None
+
+    # ----- dual mode assembly -----
+    def _enable_dual_mode(self):
+        if self._dual_enabled:
+            return
+        self._dual_enabled = True
+
+        # Remove placeholder button column
+        self._right_holder.hide()
+        self._outer.removeWidget(self._right_holder)
+
+        # Build splitter with left editor + mid controls + right editor
+        self._splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal, self)
+        self._splitter.setChildrenCollapsible(False)
+
+        # Wrap existing left editor
+        left_wrap = QtWidgets.QWidget(self)
+        lw_layout = QtWidgets.QVBoxLayout(left_wrap)
+        lw_layout.setContentsMargins(0,0,0,0)
+        lw_layout.addWidget(self.left, 1)
 
         # Middle copy controls
-        mid = QtWidgets.QVBoxLayout()
-        mid.setSpacing(12)
-        self.btn_copy_lr = QtWidgets.QPushButton("→ COPY →")
-        self.btn_copy_rl = QtWidgets.QPushButton("← COPY ←")
-        for b in (self.btn_copy_lr, self.btn_copy_rl):
-            b.setMinimumHeight(40)
+        self._mid_holder = QtWidgets.QWidget(self)
+        mid = QtWidgets.QVBoxLayout(self._mid_holder)
+        mid.setSpacing(10)
+        self.btn_copy_lr = QtWidgets.QPushButton("→ COPY IMAGES →")
+        self.btn_copy_rl = QtWidgets.QPushButton("← COPY IMAGES ←")
+        self.btn_copy_gds_lr = QtWidgets.QPushButton("→ COPY GDS →")
+        self.btn_copy_gds_rl = QtWidgets.QPushButton("← COPY GDS ←")
+        for b in (self.btn_copy_lr, self.btn_copy_rl, self.btn_copy_gds_lr, self.btn_copy_gds_rl):
+            b.setMinimumHeight(36)
             b.setCursor(QtCore.Qt.PointingHandCursor)
-            b.setToolTip("Copy selected image annotations to the other .lys")
         mid.addStretch(1)
         mid.addWidget(self.btn_copy_lr)
         mid.addWidget(self.btn_copy_rl)
+        mid.addSpacing(10)
+        mid.addWidget(self.btn_copy_gds_lr)
+        mid.addWidget(self.btn_copy_gds_rl)
         mid.addStretch(1)
 
         # Right editor
         self.right = _SingleLYSEditor(self)
-        right_box = QtWidgets.QVBoxLayout()
-        right_box.addWidget(self.right, 1)
 
-        # Resizable splitter
-        splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal)
-        wL = QtWidgets.QWidget(); wL.setLayout(left_box)
-        wM = QtWidgets.QWidget(); wM.setLayout(mid)
-        wR = QtWidgets.QWidget(); wR.setLayout(right_box)
-        splitter.addWidget(wL)
-        splitter.addWidget(wM)
-        splitter.addWidget(wR)
-        splitter.setStretchFactor(0, 1)
-        splitter.setStretchFactor(2, 1)
-        panes.addWidget(splitter, 1)
+        # Add to splitter
+        self._splitter.addWidget(left_wrap)
+        self._splitter.addWidget(self._mid_holder)
+        self._splitter.addWidget(self.right)
+        self._splitter.setStretchFactor(0, 1)
+        self._splitter.setStretchFactor(2, 1)
 
-        # Status tip
-        self.status = QtWidgets.QLabel("Use each pane’s Browse button to open .LYS files. Select items and click a COPY arrow.")
-        self.status.setStyleSheet("color:#555;")
-        outer.addWidget(self.status)
+        self._outer.addWidget(self._splitter, 1)
 
         # Wire copy actions
-        self.btn_copy_lr.clicked.connect(lambda: self._copy_selected(src=self.left, dst=self.right))
-        self.btn_copy_rl.clicked.connect(lambda: self._copy_selected(src=self.right, dst=self.left))
+        self.btn_copy_lr.clicked.connect(lambda: self._copy_selected_images(src=self.left, dst=self.right))
+        self.btn_copy_rl.clicked.connect(lambda: self._copy_selected_images(src=self.right, dst=self.left))
+        self.btn_copy_gds_lr.clicked.connect(lambda: self._copy_selected_gds(src=self.left, dst=self.right))
+        self.btn_copy_gds_rl.clicked.connect(lambda: self._copy_selected_gds(src=self.right, dst=self.left))
 
-    # ----- copy logic reused -----
-    def _selected_elem_ids(self, tab: _SingleLYSEditor) -> List[int]:
+    # ----- copy logic (images) -----
+    def _selected_image_ids(self, tab: _SingleLYSEditor) -> List[int]:
         return [int(tab.list.item(i).data(QtCore.Qt.UserRole)) for i in range(tab.list.count()) if tab.list.item(i).isSelected()]
 
-    def _copy_selected(self, src: _SingleLYSEditor, dst: _SingleLYSEditor):
+    def _copy_selected_images(self, src: _SingleLYSEditor, dst: _SingleLYSEditor):
         if src._ordered_parent is None or src._tree is None:
-            QtWidgets.QMessageBox.information(self, "Nothing to copy", "Open a .LYS file on the source side and select items.")
+            QtWidgets.QMessageBox.information(self, "Nothing to copy", "Open a .LYS file on the source side and select images.")
             return
         if dst._ordered_parent is None or dst._tree is None:
             QtWidgets.QMessageBox.information(self, "No destination", "Open a .LYS file on the destination side.")
             return
-        ids = self._selected_elem_ids(src)
+        ids = self._selected_image_ids(src)
         if not ids:
             QtWidgets.QMessageBox.information(self, "Nothing selected", "Select one or more images to copy.")
             return
@@ -584,16 +814,57 @@ class LYSTab(QtWidgets.QWidget):
             it.setData(QtCore.Qt.ItemDataRole.UserRole, dst._elem_seq)
             dst.list.addItem(it)
 
-        dst._status(f"Added {len(elems_to_add)} item(s). (Remember to Save)")
-        self.status.setText(f"Copied {len(elems_to_add)} item(s).")
+        dst._status(f"Added {len(elems_to_add)} image(s). (Remember to Save)")
+
+    # ----- copy logic (GDS) -----
+    def _selected_gds_rows(self, tab: _SingleLYSEditor) -> List[int]:
+        return [idx.row() for idx in tab.gds_list.selectedIndexes()]
+
+    def _copy_selected_gds(self, src: _SingleLYSEditor, dst: _SingleLYSEditor):
+        if src._root is None:
+            QtWidgets.QMessageBox.information(self, "No source", "Open a .LYS file on the source side and select GDS rows.")
+            return
+        if dst._root is None:
+            QtWidgets.QMessageBox.information(self, "No destination", "Open a .LYS file on the destination side.")
+            return
+        rows = self._selected_gds_rows(src)
+        if not rows:
+            QtWidgets.QMessageBox.information(self, "Nothing selected", "Select one or more GDS rows to copy.")
+            return
+
+        src_layouts = [el for el in src._root.iter("layout")]
+        dst_layouts = [el for el in dst._root.iter("layout")]
+        dst_paths = set((el.findtext("file-path") or "").strip() for el in dst_layouts)
+
+        add_count = 0
+        skip_count = 0
+        for r in rows:
+            if 0 <= r < len(src_layouts):
+                el = src_layouts[r]
+                # dedupe by file-path
+                fp = (el.findtext("file-path") or "").strip()
+                if fp and fp in dst_paths:
+                    skip_count += 1
+                    continue
+                dst._root.append(deepcopy(el))
+                if fp:
+                    dst_paths.add(fp)
+                add_count += 1
+
+        dst._gds_refresh_list()
+        msg = f"Copied {add_count} GDS"
+        if skip_count:
+            msg += f" (skipped {skip_count} duplicate by file-path)"
+        msg += ". (Remember to Save)"
+        dst._status(msg)
 
 
 # Standalone harness for quick testing
 class _Window(QtWidgets.QMainWindow):
     def __init__(self):
         super().__init__()
-        self.setWindowTitle(".LYS Tab — Side-by-side")
-        self.resize(1300, 720)
+        self.setWindowTitle(".LYS Tab — Single/Dual Toggle")
+        self.resize(1300, 800)
         self.setCentralWidget(LYSTab(self))
 
 
