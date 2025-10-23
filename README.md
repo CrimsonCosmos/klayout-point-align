@@ -13,4 +13,4 @@ d.	And also with pip install PySide6
 
 NOTE: Right now you must click on the center of the middle most arrow shapes!
 If you want to see what happened, double click the session_combined file and open it in KLayout. If you want, you can also open the .gds file in KLayout to see how it all matches up.
-Email gehl2@illinois.edu for any questions!
+Email dylangehl31@gmail.com for any questions!
