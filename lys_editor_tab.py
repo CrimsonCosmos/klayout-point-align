@@ -1,45 +1,39 @@
 
 # lys_editor_tab.py
-# Updated: detects KLayout img::Object entries AND supports double-click image preview
-# with optional application of the saved 3×3 transform from the .lys file.
-#
-# The .lys 'value' field contains:
-#   color:matrix=(a,b,c) (d,e,f) (g,h,i); ... file='...'
-# Here, matrix maps centered pixel coords (+y up) to microns. We compose:
-#   M = H_um_from_px @ A
-# where A converts top-left pixel coords (Qt image space) to centered coords:
-#   A = [[1, 0, -w/2],
-#        [0,-1,  h/2],
-#        [0, 0,    1]]
-#
+# Clean build: .LYS image list + double-click preview (with optional saved transform applied).
+# - Detects KLayout img::Object annotations and extracts file + 3x3 matrix
+# - Resolves relative paths against the .lys folder
+# - Preview dialog supports zoom/pan, Fit/100%, and "Apply saved transform" (projective)
+
 from __future__ import annotations
-import os, re
 from pathlib import Path
-import xml.etree.ElementTree as ET
 from typing import List, Optional, Tuple, Dict
+import re
+import xml.etree.ElementTree as ET
 
 from PySide6 import QtCore, QtGui, QtWidgets
 
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"}
 
+
+# ------------------------- helpers -------------------------
 def _is_image_path(s: str) -> bool:
     try:
         return Path(s).suffix.lower() in IMG_EXTS
     except Exception:
         return False
 
-def _parse_matrix_from_value(txt: str) -> Optional[Tuple[Tuple[float,float,float],Tuple[float,float,float],Tuple[float,float,float]]]:
-    """
-    Extract 3 rows of the 'matrix=(r0)(r1)(r2)' from a value string.
-    Rows are of the form '(a,b,c)'
-    Returns a 3x3 tuple-of-tuples or None.
-    """
+
+def _parse_matrix_from_value(txt: str) -> Optional[Tuple[Tuple[float,float,float],
+                                                         Tuple[float,float,float],
+                                                         Tuple[float,float,float]]]:
+    """Parse 'matrix=(a,b,c) (d,e,f) (g,h,i)' from an annotation <value> string."""
     if not isinstance(txt, str):
         return None
     m = re.search(r"matrix\s*=\s*\(([^)]+)\)\s*\(([^)]+)\)\s*\(([^)]+)\)", txt)
     if not m:
         return None
-    rows = []
+    rows: List[Tuple[float,float,float]] = []
     for i in range(1, 4):
         parts = [p.strip() for p in m.group(i).split(",")]
         if len(parts) != 3:
@@ -50,19 +44,17 @@ def _parse_matrix_from_value(txt: str) -> Optional[Tuple[Tuple[float,float,float
             return None
     return (rows[0], rows[1], rows[2])
 
-class _ListItem(QtWidgets.QListWidgetItem):
-    def __init__(self, display: str, elem_id: int):
-        super().__init__(display)
-        self.setData(QtCore.Qt.ItemDataRole.UserRole, elem_id)
 
+# --------------------- preview dialog ----------------------
 class ImagePreviewDialog(QtWidgets.QDialog):
-    """Zoomable image preview with optional transform application."""
-    def __init__(self, img_path: str, H_um_from_px: Optional[Tuple[Tuple[float,float,float],Tuple[float,float,float],Tuple[float,float,float]]] = None, parent=None):
+    """Zoomable image preview with optional saved transform (projective)."""
+    def __init__(self, img_path: str,
+                 H_um_from_px: Optional[Tuple[Tuple[float,float,float],Tuple[float,float,float],Tuple[float,float,float]]] = None,
+                 parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
         self.setWindowTitle(f"Preview — {Path(img_path).name}")
         self.resize(1100, 780)
         self._H = H_um_from_px
-        self._img_path = img_path
 
         v = QtWidgets.QVBoxLayout(self)
 
@@ -103,12 +95,12 @@ class ImagePreviewDialog(QtWidgets.QDialog):
         self._pix_item.setZValue(0)
         self.scene.addItem(self._pix_item)
 
-        # Simple axes/scale overlay (micron grid when transform applied)
-        self._grid_items: list = []
+        # Grid overlay items
+        self._grid_items: List[QtWidgets.QGraphicsItem] = []
 
         # Events
         self._ZOOM_STEP = 1.25
-        self.view.wheelEvent = self._on_wheel
+        self.view.wheelEvent = self._on_wheel  # type: ignore
         self.btn_fit.clicked.connect(self._fit)
         self.btn_reset.clicked.connect(self._reset)
         self.chk_transform.toggled.connect(self._apply_current_transform)
@@ -117,18 +109,18 @@ class ImagePreviewDialog(QtWidgets.QDialog):
         self._apply_current_transform()
         self._fit()
 
-    def _update_info
+    def _update_info(self) -> None:
         mode = "Transformed (µm)" if (self.chk_transform.isChecked() and self._H) else "Raw pixels"
         self.lbl_info.setText(f"{self._img_w}×{self._img_h}px  —  {mode}.  Wheel: zoom, Drag: pan")
 
-    def _fit
+    def _fit(self) -> None:
         self.view.fitInView(self._pix_item, QtCore.Qt.KeepAspectRatio)
 
-    def _reset
+    def _reset(self) -> None:
         self.view.resetTransform()
         self.view.centerOn(self._pix_item)
 
-    def _on_wheel(self, event):
+    def _on_wheel(self, event) -> None:
         delta = event.angleDelta().y() if hasattr(event, "angleDelta") else 0
         if delta == 0 and hasattr(event, "pixelDelta"):
             delta = event.pixelDelta().y()
@@ -138,14 +130,13 @@ class ImagePreviewDialog(QtWidgets.QDialog):
         factor = self._ZOOM_STEP if zoom_in else (1.0 / self._ZOOM_STEP)
         self.view.scale(factor, factor)
 
-    def _clear_grid
+    def _clear_grid(self) -> None:
         for it in self._grid_items:
             self.scene.removeItem(it)
         self._grid_items.clear()
 
-    def _draw_micron_grid(self, spacing_um: float = 50.0, lines: int = 10):
+    def _draw_micron_grid(self, spacing_um: float = 50.0, lines: int = 10) -> None:
         """Draw a faint crosshair/grid around origin in micron space (only when transformed)."""
-        # Use QtGui directly; do NOT grab types off QPalette (bug fix)
         pen = QtGui.QPen(QtGui.QColor(0, 0, 0, 80))
         pen.setWidthF(0)
         pen2 = QtGui.QPen(QtGui.QColor(0, 0, 255, 110))
@@ -165,17 +156,17 @@ class ImagePreviewDialog(QtWidgets.QDialog):
             y = i * spacing_um
             self._grid_items.append(self.scene.addLine(-lines*spacing_um, y, lines*spacing_um, y, pen))
 
-    def _apply_current_transform
-
+    def _apply_current_transform(self) -> None:
         self._clear_grid()
         if self.chk_transform.isChecked() and self._H is not None:
             # Compose M = H @ A
-            a11, a12, a13 = 1.0, 0.0, -self._img_w / 2.0
-            a21, a22, a23 = 0.0,-1.0,  self._img_h / 2.0
-            a31, a32, a33 = 0.0, 0.0, 1.0
-
+            A = (
+                (1.0, 0.0, -self._img_w / 2.0),
+                (0.0,-1.0,  self._img_h / 2.0),
+                (0.0, 0.0, 1.0),
+            )
             H = self._H
-            # Matrix multiplication M = H @ A
+
             def mult3(H, A):
                 return (
                     (
@@ -194,9 +185,8 @@ class ImagePreviewDialog(QtWidgets.QDialog):
                         H[2][0]*A[0][2] + H[2][1]*A[1][2] + H[2][2]*A[2][2],
                     ),
                 )
-            A = ((a11,a12,a13),(a21,a22,a23),(a31,a32,a33))
-            M = mult3(H, A)
 
+            M = mult3(H, A)
             qM = QtGui.QTransform(
                 M[0][0], M[0][1], M[0][2],
                 M[1][0], M[1][1], M[1][2],
@@ -207,7 +197,16 @@ class ImagePreviewDialog(QtWidgets.QDialog):
         else:
             self._pix_item.setTransform(QtGui.QTransform())
         self._update_info()
+        # Keep view reasonable after toggling
         self._fit()
+
+
+# ---------------------- LYS editor tab ---------------------
+class _ListItem(QtWidgets.QListWidgetItem):
+    def __init__(self, display: str, elem_id: int):
+        super().__init__(display)
+        self.setData(QtCore.Qt.ItemDataRole.UserRole, elem_id)
+
 
 class LYSTab(QtWidgets.QWidget):
     fileLoaded = QtCore.Signal(str)
@@ -230,7 +229,7 @@ class LYSTab(QtWidgets.QWidget):
         self._update_buttons_enabled()
 
     # ---------------- UI ----------------
-    def _build_ui
+    def _build_ui(self) -> None:
         v = QtWidgets.QVBoxLayout(self)
         v.setContentsMargins(0, 0, 0, 0)
         v.setSpacing(8)
@@ -295,7 +294,7 @@ class LYSTab(QtWidgets.QWidget):
         self.btn_up.setShortcut(QtGui.QKeySequence("Alt+Up"))
         self.btn_down.setShortcut(QtGui.QKeySequence("Alt+Down"))
 
-    def _wire_logic
+    def _wire_logic(self) -> None:
         self.btn_browse.clicked.connect(self._browse)
         self.btn_reload.clicked.connect(self.reload)
         self.btn_up.clicked.connect(self._move_up_clicked)
@@ -309,7 +308,7 @@ class LYSTab(QtWidgets.QWidget):
         self.list.itemDoubleClicked.connect(self._preview_item)
 
     # -------- File loading / parsing --------
-    def _update_buttons_enabled
+    def _update_buttons_enabled(self) -> None:
         has_items = self.list.count() > 0
         any_selected = len(self.list.selectedIndexes()) > 0
         self.btn_up.setEnabled(any_selected and has_items)
@@ -319,7 +318,7 @@ class LYSTab(QtWidgets.QWidget):
         self.btn_save_as.setEnabled(has_items and self._tree is not None and self._ordered_parent is not None)
         self.btn_reload.setEnabled(self._current_path is not None and self._current_path.exists())
 
-    def _browse
+    def _browse(self) -> None:
         path, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "Select a .LYS file", "", "KLayout Session (*.lys);;All files (*.*)"
         )
@@ -327,12 +326,12 @@ class LYSTab(QtWidgets.QWidget):
             self.path_edit.setText(path)
             self.load(Path(path))
 
-    def reload
+    def reload(self) -> None:
         p = self.path_edit.text().strip()
         if p:
             self.load(Path(p))
 
-    def _status(self, text: str):
+    def _status(self, text: str) -> None:
         self.lbl_status.setText(text)
 
     # ---- Image path & transform helpers ----
@@ -366,8 +365,10 @@ class LYSTab(QtWidgets.QWidget):
         if not f:
             return None
         cands = [Path(f)]
-        cands.append(Path(f.replace("\\\\", "\\")))
-        cands.append(Path(f.replace("\\", "/")))
+        # normalize slashes/backslashes
+        cands.append(Path(f.replace('\\\\', '\\')))
+        cands.append(Path(f.replace('\\', '/')))
+        # relative to .lys
         if self._current_path:
             base = self._current_path.parent
             for c in list(cands):
@@ -413,7 +414,7 @@ class LYSTab(QtWidgets.QWidget):
                 return Path(f).name or f
             except Exception:
                 return f
-        candidates = []
+        candidates: List[str] = []
         for key in ("file", "filename", "path", "src", "url", "image", "pixmap", "href"):
             v = elem.attrib.get(key)
             if v:
@@ -451,7 +452,7 @@ class LYSTab(QtWidgets.QWidget):
                     return parent
         return None
 
-    def load(self, path: Path):
+    def load(self, path: Path) -> None:
         try:
             path = path.resolve()
         except Exception:
@@ -514,7 +515,7 @@ class LYSTab(QtWidgets.QWidget):
     def _item_elem_id(self, item: QtWidgets.QListWidgetItem) -> int:
         return int(item.data(QtCore.Qt.ItemDataRole.UserRole))
 
-    def _preview_item(self, item: QtWidgets.QListWidgetItem):
+    def _preview_item(self, item: QtWidgets.QListWidgetItem) -> None:
         elem_id = self._item_elem_id(item)
         elem = self._id_to_elem.get(elem_id)
         if not elem:
@@ -541,7 +542,7 @@ class LYSTab(QtWidgets.QWidget):
     def _selected_rows(self) -> List[int]:
         return sorted({idx.row() for idx in self.list.selectedIndexes()})
 
-    def _move_up_clicked
+    def _move_up_clicked(self) -> None:
         rows = self._selected_rows()
         if not rows:
             return
@@ -551,7 +552,7 @@ class LYSTab(QtWidgets.QWidget):
         self._restore_selection([r - (1 if r > 0 else 0) for r in rows])
         self._list_reordered()
 
-    def _move_down_clicked
+    def _move_down_clicked(self) -> None:
         rows = sorted(self._selected_rows(), reverse=True)
         if not rows:
             return
@@ -561,7 +562,7 @@ class LYSTab(QtWidgets.QWidget):
         self._restore_selection([r + (1 if r < self.list.count() - 1 else 0) for r in rows])
         self._list_reordered()
 
-    def _swap_rows(self, i: int, j: int):
+    def _swap_rows(self, i: int, j: int) -> None:
         if i == j:
             return
         item_i = self.list.takeItem(i)
@@ -571,13 +572,13 @@ class LYSTab(QtWidgets.QWidget):
         if item_i is not None:
             self.list.insertItem(j, item_i)
 
-    def _restore_selection(self, rows: List[int]):
+    def _restore_selection(self, rows: List[int]) -> None:
         self.list.clearSelection()
         for r in rows:
             if 0 <= r < self.list.count():
                 self.list.item(r).setSelected(True)
 
-    def _delete_clicked
+    def _delete_clicked(self) -> None:
         rows = self._selected_rows()
         if not rows:
             return
@@ -604,7 +605,7 @@ class LYSTab(QtWidgets.QWidget):
         self._status("Deleted. (Remember to Save) ")
         self._update_buttons_enabled()
 
-    def _list_reordered(self, *args):
+    def _list_reordered(self, *args) -> None:
         if self._ordered_parent is None or self._tree is None:
             return
         ids_in_order = [self._item_elem_id(self.list.item(i)) for i in range(self.list.count())]
@@ -617,7 +618,7 @@ class LYSTab(QtWidgets.QWidget):
         self._update_buttons_enabled()
 
     # -------- Saving --------
-    def _ensure_backup(self, path: Path):
+    def _ensure_backup(self, path: Path) -> None:
         try:
             if path.exists():
                 bak = path.with_suffix(path.suffix + ".bak")
@@ -626,7 +627,7 @@ class LYSTab(QtWidgets.QWidget):
         except Exception:
             pass
 
-    def save
+    def save(self) -> None:
         if self._tree is None or self._current_path is None:
             return
         self._ensure_backup(self._current_path)
@@ -637,7 +638,7 @@ class LYSTab(QtWidgets.QWidget):
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Save failed", str(e))
 
-    def save_as
+    def save_as(self) -> None:
         if self._tree is None:
             return
         path, _ = QtWidgets.QFileDialog.getSaveFileName(
@@ -656,8 +657,9 @@ class LYSTab(QtWidgets.QWidget):
             QtWidgets.QMessageBox.critical(self, "Save failed", str(e))
 
 
+# --------------- standalone harness for quick test ---------------
 class _Window(QtWidgets.QMainWindow):
-    def __init__
+    def __init__(self):
         super().__init__()
         self.setWindowTitle(".LYS Editor — Standalone")
         self.resize(900, 600)
