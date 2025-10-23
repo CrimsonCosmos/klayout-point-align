@@ -13,3 +13,8 @@ To download the newest version, go to Versions https://github.com/wanglabq/Klayo
 To see future updates, go to the Wiki Page To-Dos https://github.com/wanglabq/KlayoutAutoAlign/wiki
 
 To contribute to the project, email Pengjie Wang pengjiew@illinois.edu
+
+
+![IMG_2025_07_07_45186](https://github.com/user-attachments/assets/c07b638d-c0f9-429e-bb0d-7f9217d04579)
+
+_Picture of 2D Material on substrate_
