@@ -10,19 +10,22 @@ ZOOM_STEP = 1.56
 
 def _load_qt():
     """
-    Import Qt bindings (PyQt5 preferred, fallback to PySide6).
+    Import Qt bindings via qt_compat (supports both PyQt6 and PySide6).
     """
     try:
-        from PyQt5 import QtCore, QtGui, QtWidgets  # type: ignore
-        return "pyqt5", QtCore, QtGui, QtWidgets
-    except Exception:
-        try:
-            from PySide6 import QtCore, QtGui, QtWidgets  # type: ignore
-            return "pyside6", QtCore, QtGui, QtWidgets
-        except Exception as e:
-            raise RuntimeError(
-                "Neither PyQt5 nor PySide6 is available. Please install one of them."
-            ) from e
+        import sys
+        from pathlib import Path
+        # Add parent directory to path to find qt_compat
+        parent_dir = Path(__file__).resolve().parent.parent
+        if str(parent_dir) not in sys.path:
+            sys.path.insert(0, str(parent_dir))
+        from qt_compat import QtCore, QtGui, QtWidgets, USING_PYQT6, USING_PYSIDE6
+        binding = "pyqt6" if USING_PYQT6 else "pyside6"
+        return binding, QtCore, QtGui, QtWidgets
+    except Exception as e:
+        raise RuntimeError(
+            "Could not import qt_compat. Please ensure PyQt6 or PySide6 is installed."
+        ) from e
 
 
 class _ImagePickerWidget:
@@ -45,10 +48,12 @@ class _ImagePickerWidget:
         api, QtCore, QtGui, QtWidgets = _load_qt()
         self._QtCore, self._QtGui, self._QtWidgets = QtCore, QtGui, QtWidgets
 
-        # Enable HiDPI scaling before creating QApplication
+        # Enable HiDPI scaling before creating QApplication (Qt5/PySide6 only; removed in Qt6)
         if QtWidgets.QApplication.instance() is None:
-            QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
-            QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
+            if hasattr(QtCore.Qt, 'AA_EnableHighDpiScaling'):
+                QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_EnableHighDpiScaling, True)
+            if hasattr(QtCore.Qt, 'AA_UseHighDpiPixmaps'):
+                QtCore.QCoreApplication.setAttribute(QtCore.Qt.AA_UseHighDpiPixmaps, True)
 
         self.img_path = str(img_path)
         self.max_points = max_points

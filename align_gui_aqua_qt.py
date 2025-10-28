@@ -3,7 +3,7 @@
 
 from __future__ import annotations
 import sys
-from PySide6 import QtCore, QtGui, QtWidgets
+from qt_compat import QtCore, QtGui, QtWidgets
 
 from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner

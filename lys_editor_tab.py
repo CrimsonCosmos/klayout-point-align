@@ -8,7 +8,7 @@ import xml.etree.ElementTree as ET
 from copy import deepcopy
 import os
 
-from PySide6 import QtCore, QtGui, QtWidgets
+from qt_compat import QtCore, QtGui, QtWidgets
 
 IMG_EXTS = {".png", ".jpg", ".jpeg", ".tif", ".tiff", ".bmp", ".gif", ".webp"}
 

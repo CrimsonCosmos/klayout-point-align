@@ -1,0 +1,14 @@
+{
+  "permissions": {
+    "allow": [
+      "Bash(tree /F \"C:\\Users\\gehl2\\Auto_align_program\" -L 3)",
+      "Bash(python -m py_compile:*)",
+      "Bash(python -c:*)",
+      "Bash(python:*)",
+      "Bash(git reset:*)",
+      "Bash(pip install:*)"
+    ],
+    "deny": [],
+    "ask": []
+  }
+}

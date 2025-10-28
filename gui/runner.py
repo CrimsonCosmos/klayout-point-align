@@ -5,7 +5,7 @@
 from __future__ import annotations
 import os, sys, datetime, subprocess
 from pathlib import Path
-from PySide6 import QtCore
+from qt_compat import QtCore
 
 def resource_path(rel_path: str) -> Path:
     """Return absolute path to bundled resource (PyInstaller-safe)."""

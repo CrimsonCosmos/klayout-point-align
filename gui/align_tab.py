@@ -7,7 +7,7 @@ import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from PySide6 import QtCore, QtWidgets
+from qt_compat import QtCore, QtWidgets
 
 # ---- Constants mirrored from the legacy main ----
 APP_TITLE = "Point Align"
