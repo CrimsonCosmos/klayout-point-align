@@ -7,7 +7,7 @@ import datetime
 from pathlib import Path
 from typing import List, Optional
 
-from qt_compat import QtCore, QtWidgets
+from qt_compat import QtCore, QtGui, QtWidgets
 
 # ---- Constants mirrored from the legacy main ----
 APP_TITLE = "Point Align"
@@ -34,7 +34,9 @@ class AlignTab(QtWidgets.QWidget):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
+        self._prefs_file = Path(__file__).parent.parent / "align_tab_prefs.json"
         self._build_ui()
+        self._load_preferences()
 
     # ---------------- UI ----------------
     def _build_ui(self):
@@ -52,14 +54,19 @@ class AlignTab(QtWidgets.QWidget):
         g1 = QtWidgets.QVBoxLayout(grp_in)
         row = QtWidgets.QHBoxLayout()
         self.btn_add = QtWidgets.QPushButton("Add images…")
+        self.btn_add.setToolTip("Select one or more images to align (JPG, PNG, TIF, etc.)")
         self.btn_add.clicked.connect(self.add_images)
         row.addWidget(self.btn_add)
         row.addStretch(1)
         self.lbl_clear = QtWidgets.QLabel('<a href="#">Clear list</a>')
+        self.lbl_clear.setToolTip("Remove all images from the list")
         self.lbl_clear.linkActivated.connect(self.clear_list)
         row.addWidget(self.lbl_clear)
         g1.addLayout(row)
         self.list = QtWidgets.QListWidget()
+        self.list.setIconSize(QtCore.QSize(64, 64))  # Set thumbnail size
+        self.list.setSpacing(2)  # Add spacing between items
+        self.list.setToolTip("Images to be aligned. Hover over each to see the full path.")
         g1.addWidget(self.list)
 
         # Output
@@ -70,7 +77,9 @@ class AlignTab(QtWidgets.QWidget):
         # Output mode radio buttons
         radio_row = QtWidgets.QHBoxLayout()
         self.radio_new_folder = QtWidgets.QRadioButton("Create new .lys in folder")
+        self.radio_new_folder.setToolTip("Create a new .lys file with dated name (e.g., Aligned-2025-10-28.lys)")
         self.radio_existing_lys = QtWidgets.QRadioButton("Add to existing .lys file")
+        self.radio_existing_lys.setToolTip("Append aligned images to an existing .lys session file")
         self.radio_new_folder.setChecked(True)
         self.radio_new_folder.toggled.connect(self._update_output_ui)
         radio_row.addWidget(self.radio_new_folder)
@@ -82,8 +91,11 @@ class AlignTab(QtWidgets.QWidget):
         path_row = QtWidgets.QHBoxLayout()
         self.lbl_output_path = QtWidgets.QLabel("Output folder:")
         self.out_path = QtWidgets.QLineEdit()
+        self.out_path.setToolTip("Path where the .lys file will be created/updated")
         self.btn_browse_folder = QtWidgets.QPushButton("Browse Folder…")
+        self.btn_browse_folder.setToolTip("Choose a folder to save new .lys files")
         self.btn_browse_lys = QtWidgets.QPushButton("Browse .lys…")
+        self.btn_browse_lys.setToolTip("Select an existing .lys file to add images to")
         self.btn_browse_folder.clicked.connect(self.choose_output_folder)
         self.btn_browse_lys.clicked.connect(self.choose_existing_lys)
         path_row.addWidget(self.lbl_output_path)
@@ -99,14 +111,18 @@ class AlignTab(QtWidgets.QWidget):
         grid.addWidget(grp_run, 2, 0, 1, 2)
         g3 = QtWidgets.QVBoxLayout(grp_run)
         self.btn_run = QtWidgets.QPushButton("Run")
+        self.btn_run.setToolTip("Start the alignment process (Ctrl+Enter)")
+        self.btn_run.setShortcut("Ctrl+Return")
         self.btn_run.clicked.connect(self._emit_run)
         g3.addWidget(self.btn_run)
         self.progress = QtWidgets.QProgressBar()
         self.progress.setRange(0, 0)
         self.progress.setVisible(False)
+        self.progress.setToolTip("Alignment in progress...")
         g3.addWidget(self.progress)
         self.log = QtWidgets.QTextEdit()
         self.log.setReadOnly(True)
+        self.log.setToolTip("Alignment output log. Shows RMS error with quality indicators (✓ Excellent, ✓ Good, ⚠ Fair, ✗ Poor)")
         g3.addWidget(self.log)
 
         # Non-PW Group collapsible
@@ -133,7 +149,9 @@ class AlignTab(QtWidgets.QWidget):
         row_gds.setContentsMargins(0, 0, 0, 0)
         self.gds_path = QtWidgets.QLineEdit()
         self.gds_path.setPlaceholderText("Choose a .gds to embed into the .lys for this run…")
+        self.gds_path.setToolTip("GDS layout file to use instead of the default Test.GDS")
         btn_pick_gds = QtWidgets.QPushButton("Browse…")
+        btn_pick_gds.setToolTip("Select a custom GDS/GDSII layout file")
         btn_pick_gds.clicked.connect(self._pick_gds)
         row_gds.addWidget(self.gds_path, 1)
         row_gds.addWidget(btn_pick_gds, 0)
@@ -141,6 +159,7 @@ class AlignTab(QtWidgets.QWidget):
 
         # Row: custom landmarker points (µm)
         self.chk_custom_after = QtWidgets.QCheckBox("Custom landmarker points (µm)")
+        self.chk_custom_after.setToolTip("Enable this to specify custom fiducial marker positions instead of using defaults")
         self.chk_custom_after.toggled.connect(self._update_after_enabled)
         non_pw_layout.addRow(self.chk_custom_after)
 
@@ -171,6 +190,16 @@ class AlignTab(QtWidgets.QWidget):
         self.tr_x = mkspin(70);  self.tr_y = mkspin(60)
         self.bl_x = mkspin(-50); self.bl_y = mkspin(-60)
         self.br_x = mkspin(70);  self.br_y = mkspin(-60)
+
+        # Add tooltips to fiducial coordinates
+        self.tl_x.setToolTip("Top-Left X coordinate (micrometers)")
+        self.tl_y.setToolTip("Top-Left Y coordinate (micrometers)")
+        self.tr_x.setToolTip("Top-Right X coordinate (micrometers)")
+        self.tr_y.setToolTip("Top-Right Y coordinate (micrometers)")
+        self.bl_x.setToolTip("Bottom-Left X coordinate (micrometers)")
+        self.bl_y.setToolTip("Bottom-Left Y coordinate (micrometers)")
+        self.br_x.setToolTip("Bottom-Right X coordinate (micrometers)")
+        self.br_y.setToolTip("Bottom-Right Y coordinate (micrometers)")
 
         grid_after.addWidget(mklabel("TL x"), 0, 0); grid_after.addWidget(self.tl_x, 0, 1)
         grid_after.addWidget(mklabel("TL y"), 0, 2); grid_after.addWidget(self.tl_y, 0, 3)
@@ -204,7 +233,34 @@ class AlignTab(QtWidgets.QWidget):
 
     @QtCore.Slot(str)
     def insertPlain(self, text: str):
+        # Check if line contains RMS error value
+        if "RMS=" in text or "RMS " in text:
+            # Parse RMS value
+            import re
+            match = re.search(r'RMS[=\s]+([\d.]+)', text)
+            if match:
+                try:
+                    rms_value = float(match.group(1))
+                    quality_indicator = self._get_quality_indicator(rms_value)
+                    # Insert with color
+                    self.log.setTextColor(quality_indicator['color'])
+                    self.log.insertPlainText(text.rstrip() + f" {quality_indicator['symbol']}\n")
+                    self.log.setTextColor(QtGui.QColor("black"))  # Reset color
+                    return
+                except ValueError:
+                    pass
         self.log.insertPlainText(text)
+
+    def _get_quality_indicator(self, rms_um: float) -> dict:
+        """Return quality indicator based on RMS error in micrometers."""
+        if rms_um < 0.3:
+            return {'symbol': '✓ Excellent', 'color': QtGui.QColor('#00AA00')}  # Green
+        elif rms_um < 0.5:
+            return {'symbol': '✓ Good', 'color': QtGui.QColor('#88AA00')}  # Yellow-green
+        elif rms_um < 1.0:
+            return {'symbol': '⚠ Fair', 'color': QtGui.QColor('#FFAA00')}  # Orange
+        else:
+            return {'symbol': '✗ Poor', 'color': QtGui.QColor('#CC0000')}  # Red
 
     # ---------- UI helpers ----------
     def _toggle_non_pw_panel(self, checked: bool):
@@ -237,7 +293,16 @@ class AlignTab(QtWidgets.QWidget):
         paths, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Select images", "", filt)
         for p in paths:
             if not any(self.list.item(i).text() == p for i in range(self.list.count())):
-                self.list.addItem(p)
+                item = QtWidgets.QListWidgetItem(Path(p).name)
+                item.setToolTip(p)  # Full path in tooltip
+                item.setData(QtCore.Qt.UserRole, p)  # Store full path
+
+                # Create thumbnail
+                thumbnail = self._create_thumbnail(p)
+                if thumbnail:
+                    item.setIcon(QtGui.QIcon(thumbnail))
+
+                self.list.addItem(item)
 
     def clear_list(self, *_):
         self.list.clear()
@@ -256,6 +321,7 @@ class AlignTab(QtWidgets.QWidget):
         p = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose output folder", default_dir)
         if p:
             self.out_path.setText(p)
+            self._save_preferences()
 
     def choose_existing_lys(self):
         # Default to parent folder of last .lys if available
@@ -273,9 +339,22 @@ class AlignTab(QtWidgets.QWidget):
         )
         if p:
             self.out_path.setText(p)
+            self._save_preferences()
 
-    def current_images(self) -> List[str]: 
-        return [self.list.item(i).text() for i in range(self.list.count())]
+    def current_images(self) -> List[str]:
+        return [self.list.item(i).data(QtCore.Qt.UserRole) for i in range(self.list.count())]
+
+    def _create_thumbnail(self, img_path: str, size: int = 64) -> Optional[QtGui.QPixmap]:
+        """Create a thumbnail pixmap from an image file."""
+        try:
+            qimg = QtGui.QImage(img_path)
+            if qimg.isNull():
+                return None
+            # Scale to thumbnail size while maintaining aspect ratio
+            pixmap = QtGui.QPixmap.fromImage(qimg)
+            return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        except Exception:
+            return None
 
     def compute_dated_lys_path(self, base: Path) -> Path:
         """Generate a unique .lys filename like Aligned-2025-10-28.lys"""
@@ -358,8 +437,34 @@ class AlignTab(QtWidgets.QWidget):
         try:
             argv = self.build_argv()
         except Exception as e:
-            QtWidgets.QMessageBox.critical(self, "Invalid settings", str(e)); 
+            QtWidgets.QMessageBox.critical(self, "Invalid settings", str(e));
             return
         self.setProgressVisible(True)
         self.appendLog("Launching (external Python subprocess)…\n")
         self.runRequested.emit(argv)
+
+    # Preferences
+    def _load_preferences(self):
+        """Load saved output path preference"""
+        try:
+            if self._prefs_file.exists():
+                import json
+                with open(self._prefs_file, 'r') as f:
+                    prefs = json.load(f)
+                    last_output = prefs.get('last_output_path', '')
+                    if last_output:
+                        self.out_path.setText(last_output)
+        except Exception:
+            pass
+
+    def _save_preferences(self):
+        """Save current output path to preferences"""
+        try:
+            import json
+            prefs = {
+                'last_output_path': self.out_path.text().strip()
+            }
+            with open(self._prefs_file, 'w') as f:
+                json.dump(prefs, f)
+        except Exception:
+            pass

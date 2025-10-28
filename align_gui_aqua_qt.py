@@ -3,6 +3,8 @@
 
 from __future__ import annotations
 import sys
+import json
+from pathlib import Path
 from qt_compat import QtCore, QtGui, QtWidgets
 
 from gui.align_tab import AlignTab
@@ -11,22 +13,238 @@ from lys_editor_tab import LYSTab
 
 APP_TITLE = "Point Align"
 
+DARK_STYLESHEET = """
+QWidget {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+}
+
+QMainWindow, QDialog {
+    background-color: #2b2b2b;
+}
+
+QTabWidget::pane {
+    border: 1px solid #3d3d3d;
+    background-color: #2b2b2b;
+}
+
+QTabBar::tab {
+    background-color: #3d3d3d;
+    color: #e0e0e0;
+    padding: 8px 16px;
+    border: 1px solid #3d3d3d;
+    border-bottom: none;
+}
+
+QTabBar::tab:selected {
+    background-color: #2b2b2b;
+    border-bottom: 2px solid #5c9fd8;
+}
+
+QTabBar::tab:hover {
+    background-color: #3d3d3d;
+}
+
+QGroupBox {
+    border: 1px solid #3d3d3d;
+    margin-top: 10px;
+    padding-top: 10px;
+    color: #e0e0e0;
+}
+
+QGroupBox::title {
+    subcontrol-origin: margin;
+    subcontrol-position: top left;
+    padding: 0 5px;
+    color: #5c9fd8;
+}
+
+QPushButton {
+    background-color: #3d3d3d;
+    color: #e0e0e0;
+    border: 1px solid #555555;
+    padding: 6px 12px;
+    border-radius: 3px;
+}
+
+QPushButton:hover {
+    background-color: #4d4d4d;
+    border: 1px solid #5c9fd8;
+}
+
+QPushButton:pressed {
+    background-color: #2d2d2d;
+}
+
+QPushButton:disabled {
+    background-color: #2d2d2d;
+    color: #666666;
+}
+
+QLineEdit, QTextEdit, QPlainTextEdit {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #3d3d3d;
+    padding: 4px;
+    selection-background-color: #5c9fd8;
+}
+
+QListWidget {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #3d3d3d;
+    alternate-background-color: #252525;
+}
+
+QListWidget::item:selected {
+    background-color: #5c9fd8;
+    color: #ffffff;
+}
+
+QListWidget::item:hover {
+    background-color: #3d3d3d;
+}
+
+QLabel {
+    color: #e0e0e0;
+    background-color: transparent;
+}
+
+QLabel[class="link"] {
+    color: #5c9fd8;
+}
+
+QCheckBox, QRadioButton {
+    color: #e0e0e0;
+    spacing: 5px;
+}
+
+QCheckBox::indicator, QRadioButton::indicator {
+    width: 16px;
+    height: 16px;
+    border: 1px solid #555555;
+    background-color: #1e1e1e;
+}
+
+QCheckBox::indicator:checked, QRadioButton::indicator:checked {
+    background-color: #5c9fd8;
+}
+
+QComboBox {
+    background-color: #3d3d3d;
+    color: #e0e0e0;
+    border: 1px solid #555555;
+    padding: 4px;
+}
+
+QComboBox:hover {
+    border: 1px solid #5c9fd8;
+}
+
+QComboBox::drop-down {
+    border: none;
+}
+
+QComboBox QAbstractItemView {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    selection-background-color: #5c9fd8;
+}
+
+QSpinBox, QDoubleSpinBox {
+    background-color: #1e1e1e;
+    color: #e0e0e0;
+    border: 1px solid #3d3d3d;
+    padding: 4px;
+}
+
+QProgressBar {
+    background-color: #1e1e1e;
+    border: 1px solid #3d3d3d;
+    text-align: center;
+    color: #e0e0e0;
+}
+
+QProgressBar::chunk {
+    background-color: #5c9fd8;
+}
+
+QMenuBar {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+}
+
+QMenuBar::item:selected {
+    background-color: #3d3d3d;
+}
+
+QMenu {
+    background-color: #2b2b2b;
+    color: #e0e0e0;
+    border: 1px solid #3d3d3d;
+}
+
+QMenu::item:selected {
+    background-color: #5c9fd8;
+}
+
+QScrollBar:vertical {
+    background-color: #2b2b2b;
+    width: 12px;
+}
+
+QScrollBar::handle:vertical {
+    background-color: #555555;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:vertical:hover {
+    background-color: #666666;
+}
+
+QScrollBar:horizontal {
+    background-color: #2b2b2b;
+    height: 12px;
+}
+
+QScrollBar::handle:horizontal {
+    background-color: #555555;
+    border-radius: 4px;
+}
+
+QScrollBar::handle:horizontal:hover {
+    background-color: #666666;
+}
+"""
+
 class AquaHeader(QtWidgets.QWidget):
     def __init__(self, title, parent=None):
         super().__init__(parent)
         self.title = title
+        self.dark_mode = False
         self.setFixedHeight(56)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
+
+    def set_dark_mode(self, enabled: bool):
+        self.dark_mode = enabled
+        self.update()
 
     def paintEvent(self, e):
         p = QtGui.QPainter(self)
         rect = self.rect()
         grad = QtGui.QLinearGradient(0, 0, 0, rect.height())
-        grad.setColorAt(0.0, QtGui.QColor("#eaf2ff"))
-        grad.setColorAt(0.5, QtGui.QColor("#d9e6ff"))
-        grad.setColorAt(1.0, QtGui.QColor("#cddcff"))
+        if self.dark_mode:
+            grad.setColorAt(0.0, QtGui.QColor("#1e1e1e"))
+            grad.setColorAt(0.5, QtGui.QColor("#2b2b2b"))
+            grad.setColorAt(1.0, QtGui.QColor("#3d3d3d"))
+            text_color = QtGui.QColor("#e0e0e0")
+        else:
+            grad.setColorAt(0.0, QtGui.QColor("#eaf2ff"))
+            grad.setColorAt(0.5, QtGui.QColor("#d9e6ff"))
+            grad.setColorAt(1.0, QtGui.QColor("#cddcff"))
+            text_color = QtGui.QColor("#2a2a2a")
         p.fillRect(rect, grad)
-        pen = QtGui.QPen(QtGui.QColor("#2a2a2a"))
+        pen = QtGui.QPen(text_color)
         p.setPen(pen)
         font = QtGui.QFont("Lucida Grande", 13)
         if "Lucida Grande" not in QtGui.QFontDatabase().families():
@@ -43,6 +261,15 @@ class MainWin(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle(APP_TITLE)
         self.resize(1100, 840)
+        self._prefs_file = Path(__file__).parent / "gui_prefs.json"
+        self._dark_mode = False
+
+        # Create menu bar
+        menubar = self.menuBar()
+        view_menu = menubar.addMenu("View")
+        self.theme_action = view_menu.addAction("🌙 Dark Mode")
+        self.theme_action.setCheckable(True)
+        self.theme_action.triggered.connect(self._toggle_theme)
 
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
@@ -69,6 +296,9 @@ class MainWin(QtWidgets.QMainWindow):
         self.align_tab.runRequested.connect(self._start_run)
         self._worker = None
 
+        # Load saved theme preference
+        self._load_preferences()
+
     # Runner wiring
     def _start_run(self, argv: list):
         worker = ExternalRunner(argv, parent=self)
@@ -82,6 +312,84 @@ class MainWin(QtWidgets.QMainWindow):
     def _run_finished(self, code: int):
         self.align_tab.setProgressVisible(False)
         self.align_tab.appendLog(f"\n[Process exited with code {code}]\n")
+
+    # Theme management
+    def _toggle_theme(self, checked: bool):
+        self._dark_mode = checked
+        self._apply_theme()
+        self._save_preferences()
+
+    def _apply_theme(self):
+        app = QtWidgets.QApplication.instance()
+        if self._dark_mode:
+            app.setStyleSheet(DARK_STYLESHEET)
+            self.theme_action.setText("☀️ Light Mode")
+        else:
+            app.setStyleSheet("")
+            self.theme_action.setText("🌙 Dark Mode")
+        self.header.set_dark_mode(self._dark_mode)
+
+    def _load_preferences(self):
+        try:
+            if self._prefs_file.exists():
+                with open(self._prefs_file, 'r') as f:
+                    prefs = json.load(f)
+                    self._dark_mode = prefs.get('dark_mode', False)
+                    self.theme_action.setChecked(self._dark_mode)
+                    self._apply_theme()
+        except Exception:
+            pass
+
+    def _save_preferences(self):
+        try:
+            prefs = {'dark_mode': self._dark_mode}
+            with open(self._prefs_file, 'w') as f:
+                json.dump(prefs, f)
+        except Exception:
+            pass
+
+    def closeEvent(self, event):
+        """Handle window close event - prompt if there are unsaved changes."""
+        if self.lys_tab.has_unsaved_changes():
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes in the .LYS editor.\n\nDo you want to save before closing?",
+                QtWidgets.QMessageBox.StandardButton.Save |
+                QtWidgets.QMessageBox.StandardButton.Discard |
+                QtWidgets.QMessageBox.StandardButton.Cancel,
+                QtWidgets.QMessageBox.StandardButton.Save
+            )
+
+            if reply == QtWidgets.QMessageBox.StandardButton.Save:
+                # Try to save both editors if they have unsaved changes
+                if self.lys_tab.left.has_unsaved_changes():
+                    if self.lys_tab.left._current_path:
+                        self.lys_tab.left.save()
+                    else:
+                        self.lys_tab.left.save_as()
+                        # If user cancelled save dialog, cancel close
+                        if self.lys_tab.left.has_unsaved_changes():
+                            event.ignore()
+                            return
+
+                if self.lys_tab._dual_created and self.lys_tab.right and self.lys_tab.right.has_unsaved_changes():
+                    if self.lys_tab.right._current_path:
+                        self.lys_tab.right.save()
+                    else:
+                        self.lys_tab.right.save_as()
+                        # If user cancelled save dialog, cancel close
+                        if self.lys_tab.right.has_unsaved_changes():
+                            event.ignore()
+                            return
+
+                event.accept()
+            elif reply == QtWidgets.QMessageBox.StandardButton.Discard:
+                event.accept()
+            else:  # Cancel
+                event.ignore()
+        else:
+            event.accept()
 
 def main():
     app = QtWidgets.QApplication(sys.argv)

@@ -155,6 +155,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._ordered_parent: Optional[ET.Element] = None
         self._elem_seq = 0
         self._id_to_elem: Dict[int, ET.Element] = {}
+        self._has_unsaved_changes = False
 
         # Create default save directory
         self._default_save_dir = Path(__file__).parent / "lys_sessions"
@@ -176,8 +177,12 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         h = QtWidgets.QHBoxLayout(grp_open)
         self.path_edit = QtWidgets.QLineEdit()
         self.path_edit.setPlaceholderText("Select a KLayout .lys session file…")
+        self.path_edit.setToolTip("Path to the .lys session file currently being edited")
         self.btn_browse = QtWidgets.QPushButton("Browse…")
+        self.btn_browse.setToolTip("Select a KLayout .lys session file to edit")
         self.btn_reload = QtWidgets.QPushButton("Reload")
+        self.btn_reload.setToolTip("Reload the current .lys file from disk, discarding unsaved changes")
+
         h.addWidget(QtWidgets.QLabel("Session file:"))
         h.addWidget(self.path_edit, 1)
         h.addWidget(self.btn_browse)
@@ -189,10 +194,16 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         g = QtWidgets.QGridLayout(grp_gds)
         self.gds_list = QtWidgets.QListWidget()
         self.gds_list.setSelectionMode(QtWidgets.QAbstractItemView.ExtendedSelection)
+        self.gds_list.setToolTip("GDS/OASIS layout files in this session. Multiple layouts are supported.")
         self.btn_gds_add = QtWidgets.QPushButton("Add…")
+        self.btn_gds_add.setToolTip("Add a GDS/GDSII or OASIS layout file to this session")
         self.btn_gds_remove = QtWidgets.QPushButton("Remove")
+        self.btn_gds_remove.setToolTip("Remove selected GDS files from the session")
         self.btn_gds_rename = QtWidgets.QPushButton("Rename…")
+        self.btn_gds_rename.setToolTip("Rename the selected GDS file on disk")
         self.btn_gds_open = QtWidgets.QPushButton("Open Folder")
+        self.btn_gds_open.setToolTip("Open the folder containing the selected GDS file")
+
         g.addWidget(self.gds_list, 0, 0, 1, 6)
         g.addWidget(self.btn_gds_add, 1, 0)
         g.addWidget(self.btn_gds_remove, 1, 1)
@@ -217,12 +228,17 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.list.setIconSize(QtCore.QSize(80, 80))  # Set thumbnail size
         self.list.setSpacing(2)  # Add spacing between items
         self.list.setContextMenuPolicy(QtCore.Qt.NoContextMenu)  # Disable rename context menu
+        self.list.setToolTip("Images in this .lys session. Double-click to preview. Drag to reorder.")
 
         btns = QtWidgets.QVBoxLayout()
         self.btn_up = QtWidgets.QPushButton("Up")
+        self.btn_up.setToolTip("Move selected images up in the list (Alt+Up)")
         self.btn_down = QtWidgets.QPushButton("Down")
+        self.btn_down.setToolTip("Move selected images down in the list (Alt+Down)")
         self.btn_delete = QtWidgets.QPushButton("Delete")
+        self.btn_delete.setToolTip("Delete selected images from session (Delete key)")
         self.btn_rename = QtWidgets.QPushButton("Rename…")
+        self.btn_rename.setToolTip("Rename the selected image file on disk (F2)")
         for b in (self.btn_up, self.btn_down, self.btn_delete, self.btn_rename):
             b.setAutoDefault(False)
         btns.addWidget(self.btn_up)
@@ -240,11 +256,17 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         # Save bar
         save_bar = QtWidgets.QHBoxLayout()
         self.btn_save = QtWidgets.QPushButton("Save")
+        self.btn_save.setToolTip("Save changes to the .lys file (Ctrl+S)")
         self.btn_save_as = QtWidgets.QPushButton("Save As…")
+        self.btn_save_as.setToolTip("Save to a new .lys file (Ctrl+Shift+S)")
+        self.btn_open_klayout = QtWidgets.QPushButton("Open in KLayout")
+        self.btn_open_klayout.setToolTip("Open the current .lys file in KLayout application")
         self.lbl_status = QtWidgets.QLabel("")
         self.lbl_status.setStyleSheet("color:#555;")
+        self.lbl_status.setToolTip("Status messages for recent operations")
         save_bar.addWidget(self.btn_save)
         save_bar.addWidget(self.btn_save_as)
+        save_bar.addWidget(self.btn_open_klayout)
         save_bar.addStretch(1)
         save_bar.addWidget(self.lbl_status)
         v.addLayout(save_bar)
@@ -285,6 +307,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         # Save buttons
         self.btn_save.clicked.connect(self.save)
         self.btn_save_as.clicked.connect(self.save_as)
+        self.btn_open_klayout.clicked.connect(self._open_in_klayout)
 
     # ---- MULTI-GDS helpers ----
     def _iter_layouts(self) -> List[ET.Element]:
@@ -313,6 +336,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         ET.SubElement(lay, "file-path").text = path
         ET.SubElement(lay, "name").text = Path(path).name
         self._gds_refresh_list()
+        self._mark_unsaved()
         self._status("Added GDS. (Remember to Save)")
 
     def _gds_remove(self) -> None:
@@ -327,6 +351,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             if 0 <= r < len(layouts):
                 self._root.remove(layouts[r])
         self._gds_refresh_list()
+        self._mark_unsaved()
         self._status("Removed selected GDS. (Remember to Save)")
 
     def _gds_rename(self) -> None:
@@ -358,6 +383,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         name_el = lay.find("name") or ET.SubElement(lay, "name")
         name_el.text = dest.name
         self._gds_refresh_list()
+        self._mark_unsaved()
         self._status(f"Renamed GDS to {dest.name}. (Remember to Save)")
 
     def _gds_open_folder(self) -> None:
@@ -428,7 +454,17 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             val.text = _set_value_file(val.text, new_path)
         # update UI label
         item.setText(dest.name)
+        self._mark_unsaved()
         self._status(f"Renamed image to {dest.name}. (Remember to Save)")
+
+    # ---- Unsaved changes tracking ----
+    def _mark_unsaved(self) -> None:
+        """Mark that there are unsaved changes."""
+        self._has_unsaved_changes = True
+
+    def has_unsaved_changes(self) -> bool:
+        """Check if there are unsaved changes."""
+        return self._has_unsaved_changes
 
     # ---- Core logic ----
     def _update_buttons(self) -> None:
@@ -440,6 +476,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.btn_rename.setEnabled(any_sel and has_items and len(self.list.selectedIndexes()) == 1)
         self.btn_save.setEnabled(self._tree is not None and self._ordered_parent is not None)
         self.btn_save_as.setEnabled(self._tree is not None and self._ordered_parent is not None)
+        self.btn_open_klayout.setEnabled(self._current_path is not None and self._current_path.exists())
         self.btn_reload.setEnabled(self._current_path is not None and self._current_path.exists())
 
         # GDS state
@@ -514,6 +551,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             self.list.addItem(it)
 
         self._status(f"Loaded {len(elems)} items from {path.name}")
+        self._has_unsaved_changes = False  # Clear unsaved flag after loading
         self.fileLoaded.emit(str(path))
         self._update_buttons()
 
@@ -663,6 +701,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
                 self._ordered_parent.append(e)
             keep_set = set(keep_ids)
             self._id_to_elem = {i: self._id_to_elem[i] for i in keep_set if i in self._id_to_elem}
+        self._mark_unsaved()
         self._status("Deleted. (Remember to Save) ")
         self._update_buttons()
 
@@ -675,6 +714,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             self._ordered_parent.remove(child)
         for e in elems:
             self._ordered_parent.append(e)
+        self._mark_unsaved()
         self._status("Reordered. (Remember to Save) ")
         self._update_buttons()
 
@@ -700,6 +740,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._ensure_backup(self._current_path)
         try:
             self._tree.write(self._current_path, encoding="utf-8", xml_declaration=True)
+            self._has_unsaved_changes = False  # Clear unsaved flag after saving
             self._status(f"Saved: {self._current_path.name}")
             self.fileSaved.emit(str(self._current_path))
         except Exception as e:
@@ -728,12 +769,50 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         dest = Path(p)
         try:
             self._tree.write(dest, encoding="utf-8", xml_declaration=True)
+            self._has_unsaved_changes = False  # Clear unsaved flag after saving
             self._status(f"Saved as: {dest.name}")
             self.fileSaved.emit(str(dest))
             self._current_path = dest
             self.path_edit.setText(str(dest))
         except Exception as e:
             QtWidgets.QMessageBox.critical(self, "Save failed", str(e))
+
+    def _open_in_klayout(self) -> None:
+        """Open the current .lys file in KLayout application."""
+        if self._current_path is None or not self._current_path.exists():
+            QtWidgets.QMessageBox.warning(self, "No file", "No .lys file is currently loaded.")
+            return
+
+        # Check for unsaved changes
+        if self._has_unsaved_changes:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Unsaved Changes",
+                "You have unsaved changes. Do you want to save before opening in KLayout?",
+                QtWidgets.QMessageBox.StandardButton.Yes |
+                QtWidgets.QMessageBox.StandardButton.No |
+                QtWidgets.QMessageBox.StandardButton.Cancel,
+                QtWidgets.QMessageBox.StandardButton.Yes
+            )
+            if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+                self.save()
+            elif reply == QtWidgets.QMessageBox.StandardButton.Cancel:
+                return
+
+        # Try to open with KLayout
+        file_path = str(self._current_path)
+        try:
+            # Try opening with the default application for .lys files
+            QtGui.QDesktopServices.openUrl(QtCore.QUrl.fromLocalFile(file_path))
+            self._status(f"Opened {self._current_path.name} in KLayout")
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Failed to open",
+                f"Could not open file in KLayout.\n\n"
+                f"Error: {e}\n\n"
+                f"Make sure KLayout is installed and associated with .lys files."
+            )
 
 
 # ---------------- LYSTab with single/dual toggle ----------------
@@ -760,6 +839,7 @@ class LYSTab(QtWidgets.QWidget):
         self.btn_toggle_dual.setMinimumWidth(220)
         self.btn_toggle_dual.setMinimumHeight(120)
         self.btn_toggle_dual.setStyleSheet("font-size:16px; font-weight:600;")
+        self.btn_toggle_dual.setToolTip("Open a second editor pane for copying images between .lys sessions")
         right_layout.addWidget(self.btn_toggle_dual, alignment=QtCore.Qt.AlignCenter)
         right_layout.addStretch(1)
         self._outer.addWidget(self._right_holder, 0)
@@ -809,14 +889,19 @@ class LYSTab(QtWidgets.QWidget):
         self.btn_close_dual.setStyleSheet("font-weight: bold; color: #c00;")
         self.btn_close_dual.setMinimumHeight(40)
         self.btn_close_dual.setCursor(QtCore.Qt.PointingHandCursor)
+        self.btn_close_dual.setToolTip("Close the second editor pane and return to single-editor mode")
         mid.addWidget(self.btn_close_dual)
 
         mid.addStretch(1)
 
         self.btn_copy_lr = QtWidgets.QPushButton("→ COPY IMAGES →")
+        self.btn_copy_lr.setToolTip("Copy selected images from left editor to right editor")
         self.btn_copy_rl = QtWidgets.QPushButton("← COPY IMAGES ←")
+        self.btn_copy_rl.setToolTip("Copy selected images from right editor to left editor")
         self.btn_copy_gds_lr = QtWidgets.QPushButton("→ COPY GDS →")
+        self.btn_copy_gds_lr.setToolTip("Copy selected GDS files from left editor to right editor")
         self.btn_copy_gds_rl = QtWidgets.QPushButton("← COPY GDS ←")
+        self.btn_copy_gds_rl.setToolTip("Copy selected GDS files from right editor to left editor")
         for b in (self.btn_copy_lr, self.btn_copy_rl, self.btn_copy_gds_lr, self.btn_copy_gds_rl):
             b.setMinimumHeight(36)
             b.setCursor(QtCore.Qt.PointingHandCursor)
@@ -848,6 +933,15 @@ class LYSTab(QtWidgets.QWidget):
 
         # Wire close button
         self.btn_close_dual.clicked.connect(self._toggle_dual_mode)
+
+    # ----- unsaved changes check -----
+    def has_unsaved_changes(self) -> bool:
+        """Check if either editor has unsaved changes."""
+        if self.left.has_unsaved_changes():
+            return True
+        if self._dual_created and self.right and self.right.has_unsaved_changes():
+            return True
+        return False
 
     # ----- copy logic (images) -----
     def _selected_image_ids(self, tab: _SingleLYSEditor) -> List[int]:
@@ -894,6 +988,7 @@ class LYSTab(QtWidgets.QWidget):
             it.setData(QtCore.Qt.ItemDataRole.UserRole, dst._elem_seq)
             dst.list.addItem(it)
 
+        dst._mark_unsaved()
         dst._status(f"Added {len(elems_to_add)} image(s). (Remember to Save)")
 
     # ----- copy logic (GDS) -----
@@ -932,6 +1027,8 @@ class LYSTab(QtWidgets.QWidget):
                 add_count += 1
 
         dst._gds_refresh_list()
+        if add_count > 0:
+            dst._mark_unsaved()
         msg = f"Copied {add_count} GDS"
         if skip_count:
             msg += f" (skipped {skip_count} duplicate by file-path)"
