@@ -215,6 +215,6 @@
    </layer-properties>
   </layer-properties-tabs>
   <annotations>
-  <annotation><class>img::Object</class><value>color:matrix=(0.114182373306,-0.00233568426304,34.6580708055) (0.00239021950935,0.114127669498,2.17173617662) (0,0,1);min_value=0;max_value=255;is_visible=true;z_position=100;brightness=0;contrast=0;gamma=1;red_gain=1;green_gain=1;blue_gain=1;landmarks=[-731,523,320,499,298,-550,-752,-530];color_mapping=[0,'#000000';1,'#ffffff';];file='C:\\Users\\ericm\\OneDrive\\Desktop\\Summer2025TODO\\Devices\\Test\\IMG_2025_07_19_48116.JPG'</value></annotation></annotations>
+  </annotations>
  </view>
 </session>

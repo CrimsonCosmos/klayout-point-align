@@ -156,6 +156,10 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._elem_seq = 0
         self._id_to_elem: Dict[int, ET.Element] = {}
 
+        # Create default save directory
+        self._default_save_dir = Path(__file__).parent / "lys_sessions"
+        self._default_save_dir.mkdir(exist_ok=True)
+
         self._build_ui()
         self._wire()
         self._update_buttons()
@@ -209,7 +213,8 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.list.setDragDropMode(QtWidgets.QAbstractItemView.DragDropMode.InternalMove)
         self.list.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.list.setAlternatingRowColors(True)
-        self.list.setUniformItemSizes(True)
+        self.list.setUniformItemSizes(False)  # Allow variable sizes for thumbnails
+        self.list.setIconSize(QtCore.QSize(64, 64))  # Set thumbnail size
         self.list.setContextMenuPolicy(QtCore.Qt.NoContextMenu)  # Disable rename context menu
 
         btns = QtWidgets.QVBoxLayout()
@@ -276,6 +281,9 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.list.itemSelectionChanged.connect(self._update_buttons)
         self.list.customContextMenuRequested.connect(self._context_menu)
         self.path_edit.returnPressed.connect(self.reload)
+        # Save buttons
+        self.btn_save.clicked.connect(self.save)
+        self.btn_save_as.clicked.connect(self.save_as)
 
     # ---- MULTI-GDS helpers ----
     def _iter_layouts(self) -> List[ET.Element]:
@@ -491,6 +499,15 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             label = Path(f).name if f else "<image>"
             it = QtWidgets.QListWidgetItem(label)
             it.setData(QtCore.Qt.ItemDataRole.UserRole, self._elem_seq)
+
+            # Add thumbnail preview
+            if f:
+                resolved = _resolve_path(f, self._current_path)
+                if resolved:
+                    thumbnail = self._create_thumbnail(resolved)
+                    if thumbnail:
+                        it.setIcon(QtGui.QIcon(thumbnail))
+
             self.list.addItem(it)
 
         self._status(f"Loaded {len(elems)} items from {path.name}")
@@ -499,6 +516,18 @@ class _SingleLYSEditor(QtWidgets.QWidget):
 
     def _status(self, text: str) -> None:
         self.lbl_status.setText(text)
+
+    def _create_thumbnail(self, img_path: str, size: int = 64) -> Optional[QtGui.QPixmap]:
+        """Create a thumbnail pixmap from an image file."""
+        try:
+            qimg = QtGui.QImage(img_path)
+            if qimg.isNull():
+                return None
+            # Scale to thumbnail size while maintaining aspect ratio
+            pixmap = QtGui.QPixmap.fromImage(qimg)
+            return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        except Exception:
+            return None
 
     # ---------- XML parsing ----------
     def _file_and_matrix_for_elem(self, elem: ET.Element):
@@ -650,7 +679,13 @@ class _SingleLYSEditor(QtWidgets.QWidget):
     def _ensure_backup(self, path: Path) -> None:
         try:
             if path.exists():
-                bak = path.with_suffix(path.suffix + ".bak")
+                # Store backups in lys_sessions/backups folder, not next to original
+                backup_dir = self._default_save_dir / "backups"
+                backup_dir.mkdir(exist_ok=True)
+
+                # Use original filename for backup
+                bak = backup_dir / f"{path.name}.bak"
+
                 if (not bak.exists()) or (bak.stat().st_size != path.stat().st_size):
                     bak.write_bytes(path.read_bytes())
         except Exception:
@@ -670,7 +705,21 @@ class _SingleLYSEditor(QtWidgets.QWidget):
     def save_as(self) -> None:
         if self._tree is None:
             return
-        p, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save .LYS as…", "", "KLayout Session (*.lys);;All files (*.*)")
+        # Default to lys_sessions folder if current path is not set or is on Desktop
+        default_dir = str(self._default_save_dir)
+        if self._current_path:
+            # Check if current file is on Desktop
+            try:
+                desktop = Path.home() / "Desktop"
+                if self._current_path.parent == desktop:
+                    # File is on Desktop, redirect to lys_sessions
+                    default_dir = str(self._default_save_dir / self._current_path.name)
+                else:
+                    default_dir = str(self._current_path)
+            except Exception:
+                pass
+
+        p, _ = QtWidgets.QFileDialog.getSaveFileName(self, "Save .LYS as…", default_dir, "KLayout Session (*.lys);;All files (*.*)")
         if not p:
             return
         dest = Path(p)
@@ -686,10 +735,11 @@ class _SingleLYSEditor(QtWidgets.QWidget):
 
 # ---------------- LYSTab with single/dual toggle ----------------
 class LYSTab(QtWidgets.QWidget):
-    """Defaults to single-editor mode. Click the big button to enable Dual Mode (copy images)."""
+    """Defaults to single-editor mode. Click the button to show/hide second editor."""
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
-        self._dual_enabled = False
+        self._dual_visible = False
+        self._dual_created = False
         self._outer = QtWidgets.QHBoxLayout(self)
         self._outer.setContentsMargins(0,0,0,0)
         self._outer.setSpacing(8)
@@ -698,50 +748,68 @@ class LYSTab(QtWidgets.QWidget):
         self.left = _SingleLYSEditor(self)
         self._outer.addWidget(self.left, 1)
 
-        # Right: big toggle button (visible in single mode)
+        # Right: toggle button placeholder (visible in single mode)
         self._right_holder = QtWidgets.QWidget(self)
         right_layout = QtWidgets.QVBoxLayout(self._right_holder)
         right_layout.setContentsMargins(0,0,0,0)
         right_layout.addStretch(1)
-        self.btn_enable_dual = QtWidgets.QPushButton("Enable Dual Mode\n(Copy Images)")
-        self.btn_enable_dual.setMinimumWidth(220)
-        self.btn_enable_dual.setMinimumHeight(120)
-        self.btn_enable_dual.setStyleSheet("font-size:16px; font-weight:600;")
-        right_layout.addWidget(self.btn_enable_dual, alignment=QtCore.Qt.AlignCenter)
+        self.btn_toggle_dual = QtWidgets.QPushButton("Show Second Editor\n▶")
+        self.btn_toggle_dual.setMinimumWidth(220)
+        self.btn_toggle_dual.setMinimumHeight(120)
+        self.btn_toggle_dual.setStyleSheet("font-size:16px; font-weight:600;")
+        right_layout.addWidget(self.btn_toggle_dual, alignment=QtCore.Qt.AlignCenter)
         right_layout.addStretch(1)
         self._outer.addWidget(self._right_holder, 0)
 
-        self.btn_enable_dual.clicked.connect(self._enable_dual_mode)
+        self.btn_toggle_dual.clicked.connect(self._toggle_dual_mode)
 
         # Pre-create right editor and mid controls (hidden until enabled)
         self._mid_holder = None
         self.right = None
-        self._splitter = None
 
-    # ----- dual mode assembly -----
-    def _enable_dual_mode(self):
-        if self._dual_enabled:
+    # ----- dual mode toggle -----
+    def _toggle_dual_mode(self):
+        if not self._dual_created:
+            self._create_dual_mode()
+
+        # Toggle visibility
+        self._dual_visible = not self._dual_visible
+
+        if self._dual_visible:
+            # Show second editor (hide button, show mid+right)
+            self._right_holder.hide()
+            if self._mid_holder:
+                self._mid_holder.show()
+            if self.right:
+                self.right.show()
+        else:
+            # Hide second editor (show button, hide mid+right)
+            if self._mid_holder:
+                self._mid_holder.hide()
+            if self.right:
+                self.right.hide()
+            self._right_holder.show()
+
+    def _create_dual_mode(self):
+        """Create the dual editor UI on first toggle"""
+        if self._dual_created:
             return
-        self._dual_enabled = True
-
-        # Remove placeholder button column
-        self._right_holder.hide()
-        self._outer.removeWidget(self._right_holder)
-
-        # Build splitter with left editor + mid controls + right editor
-        self._splitter = QtWidgets.QSplitter(QtCore.Qt.Horizontal, self)
-        self._splitter.setChildrenCollapsible(False)
-
-        # Wrap existing left editor
-        left_wrap = QtWidgets.QWidget(self)
-        lw_layout = QtWidgets.QVBoxLayout(left_wrap)
-        lw_layout.setContentsMargins(0,0,0,0)
-        lw_layout.addWidget(self.left, 1)
+        self._dual_created = True
 
         # Middle copy controls
         self._mid_holder = QtWidgets.QWidget(self)
         mid = QtWidgets.QVBoxLayout(self._mid_holder)
         mid.setSpacing(10)
+
+        # Close button at top
+        self.btn_close_dual = QtWidgets.QPushButton("✕ Hide Second Editor")
+        self.btn_close_dual.setStyleSheet("font-weight: bold; color: #c00;")
+        self.btn_close_dual.setMinimumHeight(40)
+        self.btn_close_dual.setCursor(QtCore.Qt.PointingHandCursor)
+        mid.addWidget(self.btn_close_dual)
+
+        mid.addStretch(1)
+
         self.btn_copy_lr = QtWidgets.QPushButton("→ COPY IMAGES →")
         self.btn_copy_rl = QtWidgets.QPushButton("← COPY IMAGES ←")
         self.btn_copy_gds_lr = QtWidgets.QPushButton("→ COPY GDS →")
@@ -754,7 +822,6 @@ class LYSTab(QtWidgets.QWidget):
         self.btn_copy_gds_lr.setVisible(False)
         self.btn_copy_gds_rl.setVisible(False)
 
-        mid.addStretch(1)
         mid.addWidget(self.btn_copy_lr)
         mid.addWidget(self.btn_copy_rl)
         mid.addStretch(1)
@@ -762,20 +829,22 @@ class LYSTab(QtWidgets.QWidget):
         # Right editor
         self.right = _SingleLYSEditor(self)
 
-        # Add to splitter
-        self._splitter.addWidget(left_wrap)
-        self._splitter.addWidget(self._mid_holder)
-        self._splitter.addWidget(self.right)
-        self._splitter.setStretchFactor(0, 1)
-        self._splitter.setStretchFactor(2, 1)
+        # Add mid controls and right editor to the main layout (after left, before right_holder)
+        self._outer.insertWidget(1, self._mid_holder, 0)  # Insert at index 1, stretch 0
+        self._outer.insertWidget(2, self.right, 1)  # Insert at index 2, stretch 1
 
-        self._outer.addWidget(self._splitter, 1)
+        # Initially hidden
+        self._mid_holder.hide()
+        self.right.hide()
 
         # Wire copy actions
         self.btn_copy_lr.clicked.connect(lambda: self._copy_selected_images(src=self.left, dst=self.right))
         self.btn_copy_rl.clicked.connect(lambda: self._copy_selected_images(src=self.right, dst=self.left))
         self.btn_copy_gds_lr.clicked.connect(lambda: self._copy_selected_gds(src=self.left, dst=self.right))
         self.btn_copy_gds_rl.clicked.connect(lambda: self._copy_selected_gds(src=self.right, dst=self.left))
+
+        # Wire close button
+        self.btn_close_dual.clicked.connect(self._toggle_dual_mode)
 
     # ----- copy logic (images) -----
     def _selected_image_ids(self, tab: _SingleLYSEditor) -> List[int]:

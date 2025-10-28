@@ -65,13 +65,34 @@ class AlignTab(QtWidgets.QWidget):
         # Output
         grp_out = QtWidgets.QGroupBox("Output")
         grid.addWidget(grp_out, 1, 0, 1, 2)
-        g2 = QtWidgets.QHBoxLayout(grp_out)
-        self.out_base = QtWidgets.QLineEdit()
-        self.btn_browse = QtWidgets.QPushButton("Browse…")
-        self.btn_browse.clicked.connect(self.choose_out_base)
-        g2.addWidget(QtWidgets.QLabel("Output base folder:"))
-        g2.addWidget(self.out_base, 1)
-        g2.addWidget(self.btn_browse)
+        g2 = QtWidgets.QVBoxLayout(grp_out)
+
+        # Output mode radio buttons
+        radio_row = QtWidgets.QHBoxLayout()
+        self.radio_new_folder = QtWidgets.QRadioButton("Create new .lys in folder")
+        self.radio_existing_lys = QtWidgets.QRadioButton("Add to existing .lys file")
+        self.radio_new_folder.setChecked(True)
+        self.radio_new_folder.toggled.connect(self._update_output_ui)
+        radio_row.addWidget(self.radio_new_folder)
+        radio_row.addWidget(self.radio_existing_lys)
+        radio_row.addStretch(1)
+        g2.addLayout(radio_row)
+
+        # Output path selector
+        path_row = QtWidgets.QHBoxLayout()
+        self.lbl_output_path = QtWidgets.QLabel("Output folder:")
+        self.out_path = QtWidgets.QLineEdit()
+        self.btn_browse_folder = QtWidgets.QPushButton("Browse Folder…")
+        self.btn_browse_lys = QtWidgets.QPushButton("Browse .lys…")
+        self.btn_browse_folder.clicked.connect(self.choose_output_folder)
+        self.btn_browse_lys.clicked.connect(self.choose_existing_lys)
+        path_row.addWidget(self.lbl_output_path)
+        path_row.addWidget(self.out_path, 1)
+        path_row.addWidget(self.btn_browse_folder)
+        path_row.addWidget(self.btn_browse_lys)
+        g2.addLayout(path_row)
+
+        self._update_output_ui()
 
         # Run
         grp_run = QtWidgets.QGroupBox("Run")
@@ -193,6 +214,17 @@ class AlignTab(QtWidgets.QWidget):
     def _update_after_enabled(self, checked: bool):
         self.after_points_panel.setEnabled(bool(checked))
 
+    def _update_output_ui(self):
+        """Update UI based on selected output mode"""
+        if self.radio_new_folder.isChecked():
+            self.lbl_output_path.setText("Output folder:")
+            self.btn_browse_folder.setVisible(True)
+            self.btn_browse_lys.setVisible(False)
+        else:
+            self.lbl_output_path.setText("Existing .lys file:")
+            self.btn_browse_folder.setVisible(False)
+            self.btn_browse_lys.setVisible(True)
+
     def _pick_gds(self):
         p, _ = QtWidgets.QFileDialog.getOpenFileName(
             self, "Select a GDS file", "", "GDS files (*.gds *.gds2);;All files (*.*)"
@@ -207,22 +239,52 @@ class AlignTab(QtWidgets.QWidget):
             if not any(self.list.item(i).text() == p for i in range(self.list.count())):
                 self.list.addItem(p)
 
-    def clear_list(self, *_): 
+    def clear_list(self, *_):
         self.list.clear()
 
-    def choose_out_base(self):
-        p = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose output base")
-        if p: 
-            self.out_base.setText(p)
+    def choose_output_folder(self):
+        # Default to parent folder of last .lys if available
+        default_dir = ""
+        current = self.out_path.text().strip()
+        if current:
+            p = Path(current)
+            if p.is_file():
+                default_dir = str(p.parent)
+            elif p.is_dir():
+                default_dir = str(p)
+
+        p = QtWidgets.QFileDialog.getExistingDirectory(self, "Choose output folder", default_dir)
+        if p:
+            self.out_path.setText(p)
+
+    def choose_existing_lys(self):
+        # Default to parent folder of last .lys if available
+        default_dir = ""
+        current = self.out_path.text().strip()
+        if current:
+            p = Path(current)
+            if p.is_file():
+                default_dir = str(p.parent)
+            elif p.parent.exists():
+                default_dir = str(p.parent)
+
+        p, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self, "Select existing .lys file", default_dir, "KLayout Session (*.lys);;All files (*.*)"
+        )
+        if p:
+            self.out_path.setText(p)
 
     def current_images(self) -> List[str]: 
         return [self.list.item(i).text() for i in range(self.list.count())]
 
-    def compute_dated_folder(self, base: Path) -> Path:
+    def compute_dated_lys_path(self, base: Path) -> Path:
+        """Generate a unique .lys filename like Aligned-2025-10-28.lys"""
         stamp = datetime.datetime.now().strftime("%Y-%m-%d")
-        candidate = base / f"Aligned-{stamp}"; i = 2
+        candidate = base / f"Aligned-{stamp}.lys"
+        i = 2
         while candidate.exists():
-            candidate = base / f"Aligned-{stamp}-{i}"; i += 1
+            candidate = base / f"Aligned-{stamp}-{i}.lys"
+            i += 1
         return candidate
 
     def resolve_lys(self) -> str:
@@ -247,22 +309,40 @@ class AlignTab(QtWidgets.QWidget):
 
     def build_argv(self) -> list:
         files = self.current_images()
-        if not files: 
+        if not files:
             raise RuntimeError("No images selected.")
-        out_base = self.out_base.text().strip()
-        if not out_base: 
-            raise RuntimeError("Please choose an output base folder.")
-        dated = self.compute_dated_folder(Path(out_base)); dated.mkdir(parents=True, exist_ok=True)
+
+        out_path_str = self.out_path.text().strip()
+        if not out_path_str:
+            if self.radio_new_folder.isChecked():
+                raise RuntimeError("Please choose an output folder.")
+            else:
+                raise RuntimeError("Please choose an existing .lys file.")
+
+        # Determine the combined .lys output path
+        if self.radio_new_folder.isChecked():
+            # Mode 1: Create new .lys in folder
+            out_folder = Path(out_path_str)
+            if not out_folder.is_dir():
+                raise RuntimeError(f"Output path is not a folder: {out_path_str}")
+            combined_lys = self.compute_dated_lys_path(out_folder)
+            lys_in = self.resolve_lys()  # Use template
+        else:
+            # Mode 2: Add to existing .lys
+            existing_lys = Path(out_path_str)
+            if not existing_lys.is_file():
+                raise RuntimeError(f"Selected .lys file does not exist: {out_path_str}")
+            combined_lys = existing_lys
+            lys_in = str(existing_lys)  # Read from existing file
 
         after_str = self._collect_after_points_str()
 
         argv = [
             "--files", *files,
-            "--lys-in", self.resolve_lys(),
+            "--lys-in", lys_in,
             "--after", after_str,
             "--affine",
-            "--out-dir", str(dated),
-            "--combined-out", str(dated / COMBINED_FILENAME),
+            "--combined-out", str(combined_lys),
         ]
         if ALWAYS_AUTO_REVIEW:
             argv.append("--auto-review")
