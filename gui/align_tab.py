@@ -89,9 +89,9 @@ class AlignTab(QtWidgets.QWidget):
         g3.addWidget(self.log)
 
         # Non-PW Group collapsible
-        self.btn_non_pw = QtWidgets.QPushButton("Non-Pengjie Wang Group Users ▼")
+        self.btn_non_pw = QtWidgets.QPushButton("Custom Align Markers ▼")
         self.btn_non_pw.setCheckable(True)
-        self.btn_non_pw.setToolTip("Show options for users outside the Pengjie Wang group")
+        self.btn_non_pw.setToolTip("Show options for custom alignment marker coordinates")
         self.btn_non_pw.clicked.connect(self._toggle_non_pw_panel)
 
         self.non_pw_frame = QtWidgets.QFrame()
@@ -188,7 +188,7 @@ class AlignTab(QtWidgets.QWidget):
     # ---------- UI helpers ----------
     def _toggle_non_pw_panel(self, checked: bool):
         self.non_pw_frame.setVisible(checked)
-        self.btn_non_pw.setText("Non-Pengjie Wang Group Users ▲" if checked else "Non-Pengjie Wang Group Users ▼")
+        self.btn_non_pw.setText("Custom Align Markers ▲" if checked else "Custom Align Markers ▼")
 
     def _update_after_enabled(self, checked: bool):
         self.after_points_panel.setEnabled(bool(checked))

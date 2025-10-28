@@ -54,6 +54,23 @@ except ModuleNotFoundError:
         if not hasattr(_Qt, 'MoveAction'):
             _Qt.MoveAction = _Qt.DropAction.MoveAction
 
+        # Mouse buttons
+        if not hasattr(_Qt, 'LeftButton'):
+            _Qt.LeftButton = _Qt.MouseButton.LeftButton
+            _Qt.RightButton = _Qt.MouseButton.RightButton
+            _Qt.MiddleButton = _Qt.MouseButton.MiddleButton
+            _Qt.NoButton = _Qt.MouseButton.NoButton
+
+        # Keyboard keys (used by picker)
+        if not hasattr(_Qt, 'Key_Backspace'):
+            _Qt.Key_Backspace = _Qt.Key.Key_Backspace
+            _Qt.Key_S = _Qt.Key.Key_S
+            _Qt.Key_Q = _Qt.Key.Key_Q
+            _Qt.Key_Escape = _Qt.Key.Key_Escape
+            _Qt.Key_F = _Qt.Key.Key_F
+            _Qt.Key_R = _Qt.Key.Key_R
+            _Qt.Key_Space = _Qt.Key.Key_Space
+
         # Cursor shapes
         if not hasattr(_Qt, 'PointingHandCursor'):
             _Qt.PointingHandCursor = _Qt.CursorShape.PointingHandCursor

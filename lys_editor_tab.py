@@ -1,5 +1,5 @@
 
-# lys_editor_tab.py — Single-mode by default, one-click Dual Mode (copy images + GDS)
+# lys_editor_tab.py — Single-mode by default, one-click Dual Mode (copy images)
 from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
@@ -210,7 +210,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.list.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.list.setAlternatingRowColors(True)
         self.list.setUniformItemSizes(True)
-        self.list.setContextMenuPolicy(QtCore.Qt.CustomContextMenu)
+        self.list.setContextMenuPolicy(QtCore.Qt.NoContextMenu)  # Disable rename context menu
 
         btns = QtWidgets.QVBoxLayout()
         self.btn_up = QtWidgets.QPushButton("Up")
@@ -249,6 +249,12 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.btn_up.setShortcut(QtGui.QKeySequence("Alt+Up"))
         self.btn_down.setShortcut(QtGui.QKeySequence("Alt+Down"))
         self.btn_rename.setShortcut(QtGui.QKeySequence("F2"))
+
+        # Disable/hide rename buttons for GDS and images
+        self.btn_rename.setVisible(False)
+        self.btn_rename.setEnabled(False)
+        self.btn_gds_rename.setVisible(False)
+        self.btn_gds_rename.setEnabled(False)
 
     def _wire(self) -> None:
         # File top
@@ -680,7 +686,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
 
 # ---------------- LYSTab with single/dual toggle ----------------
 class LYSTab(QtWidgets.QWidget):
-    """Defaults to single-editor mode. Click the big button to enable Dual Mode (copy images and GDS)."""
+    """Defaults to single-editor mode. Click the big button to enable Dual Mode (copy images)."""
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
         self._dual_enabled = False
@@ -697,7 +703,7 @@ class LYSTab(QtWidgets.QWidget):
         right_layout = QtWidgets.QVBoxLayout(self._right_holder)
         right_layout.setContentsMargins(0,0,0,0)
         right_layout.addStretch(1)
-        self.btn_enable_dual = QtWidgets.QPushButton("Enable Dual Mode\n(Copy Images + GDS)")
+        self.btn_enable_dual = QtWidgets.QPushButton("Enable Dual Mode\n(Copy Images)")
         self.btn_enable_dual.setMinimumWidth(220)
         self.btn_enable_dual.setMinimumHeight(120)
         self.btn_enable_dual.setStyleSheet("font-size:16px; font-weight:600;")
@@ -743,12 +749,14 @@ class LYSTab(QtWidgets.QWidget):
         for b in (self.btn_copy_lr, self.btn_copy_rl, self.btn_copy_gds_lr, self.btn_copy_gds_rl):
             b.setMinimumHeight(36)
             b.setCursor(QtCore.Qt.PointingHandCursor)
+
+        # Hide GDS copy buttons
+        self.btn_copy_gds_lr.setVisible(False)
+        self.btn_copy_gds_rl.setVisible(False)
+
         mid.addStretch(1)
         mid.addWidget(self.btn_copy_lr)
         mid.addWidget(self.btn_copy_rl)
-        mid.addSpacing(10)
-        mid.addWidget(self.btn_copy_gds_lr)
-        mid.addWidget(self.btn_copy_gds_rl)
         mid.addStretch(1)
 
         # Right editor
