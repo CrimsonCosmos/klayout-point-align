@@ -216,6 +216,6 @@
    </layer-properties>
   </layer-properties-tabs>
   <annotations>
-  <annotation><class>img::Object</class><value>color:matrix=(0.114138846847,-0.00203724198015,26.9075184016) (0.00195516054388,0.114229109941,6.43968463507) (0,0,1);min_value=0;max_value=255;is_visible=true;z_position=1;brightness=0;contrast=0;gamma=1;red_gain=1;green_gain=1;blue_gain=1;landmarks=[-665.408004965,480.000308087,385.968970778,462.55230695,366.877247945,-588.188623113,-683.805530636,-569.657140102];color_mapping=[0,'#000000';1,'#ffffff';];file='C:/Users/gehl2/Downloads/IMG_2025_08_27_52189.JPG'</value></annotation><annotation><class>img::Object</class><value>color:matrix=(0.459028178748,-0.000409059908908,9.65932222741) (-6.50113178041e-05,0.458013829563,52.2267348922) (0,0,1);min_value=0;max_value=255;is_visible=true;z_position=1;brightness=0;contrast=0;gamma=1;red_gain=1;green_gain=1;blue_gain=1;landmarks=[-130.096135023,16.6389582992,131.610045397,17.3031169468,131.092649727,-245.323968635,-130.044336325,-244.732659297];color_mapping=[0,'#000000';1,'#ffffff';];file='C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG'</value></annotation></annotations>
+  </annotations>
  </view>
 </session>

@@ -93,6 +93,12 @@ except ModuleNotFoundError:
         if not hasattr(_Qt, 'KeepAspectRatio'):
             _Qt.KeepAspectRatio = _Qt.AspectRatioMode.KeepAspectRatio
 
+        # Transformation mode (for scaling pixmaps)
+        if not hasattr(_Qt, 'SmoothTransformation'):
+            _Qt.SmoothTransformation = _Qt.TransformationMode.SmoothTransformation
+        if not hasattr(_Qt, 'FastTransformation'):
+            _Qt.FastTransformation = _Qt.TransformationMode.FastTransformation
+
         # Item data roles (common subset)
         if not hasattr(_Qt, 'DisplayRole'):
             _Qt.DisplayRole = _Qt.ItemDataRole.DisplayRole

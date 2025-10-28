@@ -486,13 +486,15 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._gds_refresh_list()
 
         elems, parent = self._find_image_elems(root)
+
+        # Set _ordered_parent even if no images exist (needed for copying into empty .lys)
+        self._ordered_parent = parent
+
         if not elems:
-            self._status("No image annotations found.")
+            self._status("No image annotations found. (Ready to accept copied images)")
             self._update_buttons()
             self.fileLoaded.emit(str(path))
             return
-
-        self._ordered_parent = parent
         for e in elems:
             self._elem_seq += 1
             self._id_to_elem[self._elem_seq] = e
@@ -504,14 +506,10 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             # Add thumbnail preview
             if f:
                 resolved = _resolve_path(f, self._current_path)
-                print(f"Image path: {f}, Resolved: {resolved}")  # Debug
                 if resolved:
                     thumbnail = self._create_thumbnail(resolved)
                     if thumbnail:
-                        print(f"  -> Thumbnail created: {thumbnail.width()}x{thumbnail.height()}")  # Debug
                         it.setIcon(QtGui.QIcon(thumbnail))
-                    else:
-                        print(f"  -> Thumbnail creation failed")  # Debug
 
             self.list.addItem(it)
 
@@ -531,9 +529,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             # Scale to thumbnail size while maintaining aspect ratio
             pixmap = QtGui.QPixmap.fromImage(qimg)
             return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        except Exception as e:
-            # Debug: print error if thumbnail creation fails
-            print(f"Failed to create thumbnail for {img_path}: {e}")
+        except Exception:
             return None
 
     # ---------- XML parsing ----------
@@ -556,8 +552,8 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         annotations = root.find(".//annotations")
         if annotations is not None:
             hits = [e for e in list(annotations) if self._is_image_elem(e)]
-            if hits:
-                return hits, annotations
+            # Return the annotations element even if no image children exist
+            return hits, annotations
         # fallback
         parent_hits: Dict[ET.Element, List[ET.Element]] = {}
         for e in root.iter():
