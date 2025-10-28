@@ -162,14 +162,17 @@ def main() -> int:
         # autodetect_fiducials not available; auto falls back to GUI in core
         pass
 
-    lys_in_path = Path(args.lys_in).expanduser()
+    lys_in_path = Path(args.lys_in).expanduser().resolve()
 
     # Combined mode: prepare the target once (fresh for each program run)
     combined_path: Optional[Path] = None
     if args.combined_out:
-        combined_path = Path(args.combined_out).expanduser()
+        combined_path = Path(args.combined_out).expanduser().resolve()
         combined_path.parent.mkdir(parents=True, exist_ok=True)
-        shutil.copyfile(lys_in_path, combined_path)
+
+        # Only copy if input and output are different files
+        if lys_in_path != combined_path:
+            shutil.copyfile(lys_in_path, combined_path)
 
     # Parse optional origin
     origin = None

@@ -14,7 +14,8 @@
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m pip list)",
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" align_gui_aqua_qt.py)",
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c \"from qt_compat import QtCore; print(''LeftButton:'', hasattr(QtCore.Qt, ''LeftButton'')); print(''Key_S:'', hasattr(QtCore.Qt, ''Key_S''))\")",
-      "WebFetch(domain:github.com)"
+      "WebFetch(domain:github.com)",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c \"from lys_editor_tab import _SingleLYSEditor; print(''Import successful'')\")"
     ],
     "deny": [],
     "ask": []

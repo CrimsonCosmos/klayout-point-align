@@ -214,7 +214,8 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self.list.setDefaultDropAction(QtCore.Qt.DropAction.MoveAction)
         self.list.setAlternatingRowColors(True)
         self.list.setUniformItemSizes(False)  # Allow variable sizes for thumbnails
-        self.list.setIconSize(QtCore.QSize(64, 64))  # Set thumbnail size
+        self.list.setIconSize(QtCore.QSize(80, 80))  # Set thumbnail size
+        self.list.setSpacing(2)  # Add spacing between items
         self.list.setContextMenuPolicy(QtCore.Qt.NoContextMenu)  # Disable rename context menu
 
         btns = QtWidgets.QVBoxLayout()
@@ -503,10 +504,14 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             # Add thumbnail preview
             if f:
                 resolved = _resolve_path(f, self._current_path)
+                print(f"Image path: {f}, Resolved: {resolved}")  # Debug
                 if resolved:
                     thumbnail = self._create_thumbnail(resolved)
                     if thumbnail:
+                        print(f"  -> Thumbnail created: {thumbnail.width()}x{thumbnail.height()}")  # Debug
                         it.setIcon(QtGui.QIcon(thumbnail))
+                    else:
+                        print(f"  -> Thumbnail creation failed")  # Debug
 
             self.list.addItem(it)
 
@@ -517,7 +522,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
     def _status(self, text: str) -> None:
         self.lbl_status.setText(text)
 
-    def _create_thumbnail(self, img_path: str, size: int = 64) -> Optional[QtGui.QPixmap]:
+    def _create_thumbnail(self, img_path: str, size: int = 80) -> Optional[QtGui.QPixmap]:
         """Create a thumbnail pixmap from an image file."""
         try:
             qimg = QtGui.QImage(img_path)
@@ -526,7 +531,9 @@ class _SingleLYSEditor(QtWidgets.QWidget):
             # Scale to thumbnail size while maintaining aspect ratio
             pixmap = QtGui.QPixmap.fromImage(qimg)
             return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        except Exception:
+        except Exception as e:
+            # Debug: print error if thumbnail creation fails
+            print(f"Failed to create thumbnail for {img_path}: {e}")
             return None
 
     # ---------- XML parsing ----------
