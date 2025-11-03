@@ -38,21 +38,27 @@ class ExternalRunner(QtCore.QThread):
         log_path = Path(os.getenv("TEMP", str(Path.home()))) / f"PointAlign_run_{ts}.log"
         self.logfile_ready.emit(str(log_path))
 
-        # Prefer system Python; fall back to 'python'
-        cmd = None
-        for cand in (["py", "-3"], ["py"], ["python3"], ["python"]):
-            try:
-                subprocess.check_output(
-                    cand + ["--version"], stderr=subprocess.STDOUT, text=True, timeout=3
-                )
-                cmd = cand + ["-u", str(script_path), *self.argv_list]
-                break
-            except Exception:
-                continue
-        if cmd is None:
-            self.line_ready.emit("[ERROR] No system Python found on PATH.\n")
-            self.finished_with_code.emit(1)
-            return
+        # Use bundled Python if frozen (PyInstaller), otherwise use system Python
+        if getattr(sys, 'frozen', False):
+            # Running from PyInstaller bundle - use bundled Python
+            python_exe = sys.executable
+            cmd = [python_exe, "-u", str(script_path), *self.argv_list]
+        else:
+            # Running from source - prefer system Python
+            cmd = None
+            for cand in (["py", "-3"], ["py"], ["python3"], ["python"]):
+                try:
+                    subprocess.check_output(
+                        cand + ["--version"], stderr=subprocess.STDOUT, text=True, timeout=3
+                    )
+                    cmd = cand + ["-u", str(script_path), *self.argv_list]
+                    break
+                except Exception:
+                    continue
+            if cmd is None:
+                self.line_ready.emit("[ERROR] No system Python found on PATH.\n")
+                self.finished_with_code.emit(1)
+                return
 
         env = os.environ.copy()
         env["PYTHONUTF8"] = "1"

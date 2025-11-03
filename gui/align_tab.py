@@ -10,7 +10,7 @@ from typing import List, Optional
 from qt_compat import QtCore, QtGui, QtWidgets
 
 # ---- Constants mirrored from the legacy main ----
-APP_TITLE = "Point Align"
+APP_TITLE = "Point Align v1.1"
 COMBINED_FILENAME = "session_combined.lys"
 PREFS_NAME = "align_gui_prefs.json"
 

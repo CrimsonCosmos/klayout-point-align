@@ -11,7 +11,7 @@ from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner
 from lys_editor_tab import LYSTab
 
-APP_TITLE = "Point Align"
+APP_TITLE = "Point Align v1.1"
 
 DARK_STYLESHEET = """
 QWidget {

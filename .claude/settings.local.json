@@ -1,7 +1,19 @@
 {
   "permissions": {
     "allow": [
-      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m py_compile \"gui\\align_tab.py\")"
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m py_compile \"gui\\align_tab.py\")",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m PyInstaller PointAlign.spec --clean --noconfirm)",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c:*)",
+      "Bash(start PointAlign.exe)",
+      "Bash(tasklist:*)",
+      "Bash(dir:*)",
+      "Bash(\"C:\\Users\\gehl2\\Downloads\\pandoc-3.8.2.1-windows-x86_64\\pandoc-3.8.2.1\\pandoc.exe\" USER_MANUAL.md -o USER_MANUAL.pdf)",
+      "Bash(\"C:\\Users\\gehl2\\Downloads\\pandoc-3.8.2.1-windows-x86_64\\pandoc-3.8.2.1\\pandoc.exe\" USER_MANUAL.md -o USER_MANUAL.html --standalone --self-contained)",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m pip install markdown-pdf)",
+      "Bash(\"C:\\Users\\gehl2\\Downloads\\pandoc-3.8.2.1-windows-x86_64\\pandoc-3.8.2.1\\pandoc.exe\" USER_MANUAL.md -o USER_MANUAL.html --standalone --embed-resources)",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c \"import cv2; print(''OpenCV version:'', cv2.__version__)\")",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m PyInstaller PointAlign_folder.spec --clean --noconfirm)",
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m PyInstaller PointAlign_folder.spec --noconfirm)"
     ],
     "deny": [],
     "ask": []
