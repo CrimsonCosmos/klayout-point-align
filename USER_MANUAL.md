@@ -64,8 +64,6 @@ The diagram shows the 4 alignment points (white crosshairs) where the L-shaped a
 **Solutions:**
 - Check image file paths are correct
 - Verify images weren't moved/deleted after alignment
-- Check images aren't hidden behind GDS layers
-- Press Shift+F in KLayout to fit view
 
 ### Poor Alignment (High RMS Error)
 
@@ -74,21 +72,6 @@ The diagram shows the 4 alignment points (white crosshairs) where the L-shaped a
 - Used wrong point order
 
 ---
-
-## Technical Details
-
-### Transformation Types
-
-**Affine (Default):**
-- Preserves parallel lines
-- Allows rotation, scaling, shearing, translation
-- 6 degrees of freedom
-- Use when: Images are from flat samples with minimal distortion
-
-**Homography:**
-- Allows perspective distortion
-- 8 degrees of freedom
-- Use when: Images have perspective effects or non-flat samples
 
 ### Coordinate Systems
 

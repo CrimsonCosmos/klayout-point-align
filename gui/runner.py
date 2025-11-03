@@ -40,9 +40,16 @@ class ExternalRunner(QtCore.QThread):
 
         # Use bundled Python if frozen (PyInstaller), otherwise use system Python
         if getattr(sys, 'frozen', False):
-            # Running from PyInstaller bundle - use bundled Python
-            python_exe = sys.executable
-            cmd = [python_exe, "-u", str(script_path), *self.argv_list]
+            # Running from PyInstaller bundle - use console_runner.exe
+            # sys.executable would point to the GUI app, not a Python interpreter
+            console_runner = Path(sys.executable).parent / "console_runner.exe"
+            if not console_runner.exists():
+                self.line_ready.emit(
+                    f"[ERROR] Console runner not found at {console_runner}. Rebuild with updated spec.\n"
+                )
+                self.finished_with_code.emit(1)
+                return
+            cmd = [str(console_runner), str(script_path), *self.argv_list]
         else:
             # Running from source - prefer system Python
             cmd = None
