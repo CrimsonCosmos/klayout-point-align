@@ -55,6 +55,8 @@ a = Analysis(
     excludes=excludes,
     noarchive=False,
     optimize=0,
+    win_no_prefer_redirects=False,
+    win_private_assemblies=True,
 )
 pyz = PYZ(a.pure)
 
@@ -90,6 +92,8 @@ console_a = Analysis(
     excludes=excludes,
     noarchive=False,
     optimize=0,
+    win_no_prefer_redirects=False,
+    win_private_assemblies=True,
 )
 console_pyz = PYZ(console_a.pure)
 
