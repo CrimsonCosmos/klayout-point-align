@@ -6,9 +6,20 @@ This exists solely to provide a proper Python interpreter for spawned subprocess
 when the main app is frozen with PyInstaller in windowed mode (console=False).
 """
 import sys
+import os
 import runpy
 
 if __name__ == "__main__":
+    # Force UTF-8 encoding for stdout/stderr to handle Unicode characters
+    if sys.stdout.encoding != 'utf-8':
+        sys.stdout.reconfigure(encoding='utf-8', errors='replace')
+    if sys.stderr.encoding != 'utf-8':
+        sys.stderr.reconfigure(encoding='utf-8', errors='replace')
+
+    # Also set environment variables as backup
+    os.environ['PYTHONIOENCODING'] = 'utf-8'
+    os.environ['PYTHONUTF8'] = '1'
+
     if len(sys.argv) < 2:
         print("Usage: console_runner.py <script.py> [args...]", file=sys.stderr)
         sys.exit(1)
