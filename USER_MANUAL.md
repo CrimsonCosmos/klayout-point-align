@@ -73,6 +73,8 @@ The diagram shows the 4 alignment points (white crosshairs) where the L-shaped a
 
 ---
 
+## How LYS Works
+
 ### Coordinate Systems
 
 **Image Space:** Pixels (top-left origin)
