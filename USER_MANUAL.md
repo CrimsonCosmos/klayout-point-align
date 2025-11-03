@@ -90,16 +90,10 @@ The diagram shows the 4 alignment points (white crosshairs) where the L-shaped a
 
 ---
 
-## Advanced Features
-
 ### Custom Coordinate Entry
 Enter coordinates manually instead of using (-50,60),(70,60),(-50,-60),(70,-60)
 
 Format: `(X1,Y1),(X2,Y2),(X3,Y3),(X4,Y4)` in micrometers
-
-### Session Management
-- Sessions auto-saved with timestamps
-- Prevents overwriting existing work
 
 ---
 
