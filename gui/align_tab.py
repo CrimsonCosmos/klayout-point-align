@@ -14,13 +14,11 @@ APP_TITLE = "Point Align"
 COMBINED_FILENAME = "session_combined.lys"
 PREFS_NAME = "align_gui_prefs.json"
 
-# Template .lys shipped with the app (or fallback path)
+# Template .lys shipped with the app
 LYS_BASENAME = "Test_with_img.lys"
-ABSOLUTE_LYS_FALLBACK = Path(r"C:\Users\gehl2\Test_with_img.lys")
 
-# Canonical GDS for PW Group users (ship alongside app or use absolute fallback)
+# Canonical GDS for PW Group users (ship alongside app)
 GDS_BASENAME = "Test.GDS"
-ABSOLUTE_GDS_FALLBACK = Path(r"C:\Users\gehl2\Test.GDS")
 
 DEFAULT_AFTER_POINTS = "(-50,60),(70,60),(-50,-60),(70,-60)"  # TL, TR, BL, BR (µm)
 ALWAYS_AUTO_REVIEW = True
@@ -369,12 +367,14 @@ class AlignTab(QtWidgets.QWidget):
     def resolve_lys(self) -> str:
         p0 = resource_path(LYS_BASENAME)
         if p0.exists(): return str(p0)
-        return str(ABSOLUTE_LYS_FALLBACK)
+        # Fallback: return empty string if template not found - user must browse
+        return ""
 
     def resolve_gds(self) -> str:
         p0 = resource_path(GDS_BASENAME)
         if p0.exists(): return str(p0)
-        return str(ABSOLUTE_GDS_FALLBACK)
+        # Fallback: return empty string if template not found - user must browse
+        return ""
 
     def _collect_after_points_str(self) -> str:
         if not self.btn_non_pw.isChecked() or not self.chk_custom_after.isChecked():

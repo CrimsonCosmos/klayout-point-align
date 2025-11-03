@@ -734,6 +734,7 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         except Exception:
             pass
 
+
     def save(self) -> None:
         if self._tree is None or self._current_path is None:
             return
@@ -986,6 +987,15 @@ class LYSTab(QtWidgets.QWidget):
             label = Path(f).name
             it = QtWidgets.QListWidgetItem(label)
             it.setData(QtCore.Qt.ItemDataRole.UserRole, dst._elem_seq)
+
+            # Add thumbnail preview
+            if f:
+                resolved = _resolve_path(f, dst._current_path)
+                if resolved:
+                    thumbnail = dst._create_thumbnail(resolved)
+                    if thumbnail:
+                        it.setIcon(QtGui.QIcon(thumbnail))
+
             dst.list.addItem(it)
 
         dst._mark_unsaved()
