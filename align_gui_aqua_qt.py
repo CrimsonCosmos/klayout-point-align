@@ -10,6 +10,7 @@ from qt_compat import QtCore, QtGui, QtWidgets
 from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner
 from lys_editor_tab import LYSTab
+from diagnostic_logger import init_logger
 
 APP_TITLE = "Point Align v1.1"
 
@@ -225,6 +226,10 @@ class AquaHeader(QtWidgets.QWidget):
         self.setFixedHeight(56)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
 
+        # Load the icon
+        icon_path = Path(__file__).parent / "icon.ico"
+        self.icon = QtGui.QPixmap(str(icon_path)) if icon_path.exists() else None
+
     def set_dark_mode(self, enabled: bool):
         self.dark_mode = enabled
         self.update()
@@ -250,8 +255,24 @@ class AquaHeader(QtWidgets.QWidget):
         if "Lucida Grande" not in QtGui.QFontDatabase().families():
             font = QtGui.QFont("Segoe UI Semibold", 12)
         p.setFont(font)
+
+        # Draw icon and text
+        x_offset = 16
+        if self.icon and not self.icon.isNull():
+            # Scale icon to fit header height with some padding
+            icon_size = 32  # Slightly smaller than header height for nice padding
+            scaled_icon = self.icon.scaled(
+                icon_size, icon_size,
+                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
+                QtCore.Qt.TransformationMode.SmoothTransformation
+            )
+            # Center icon vertically
+            icon_y = (rect.height() - icon_size) // 2
+            p.drawPixmap(x_offset, icon_y, scaled_icon)
+            x_offset += icon_size + 8  # Add spacing after icon
+
         p.drawText(
-            QtCore.QRect(16, 0, rect.width() - 32, rect.height()),
+            QtCore.QRect(x_offset, 0, rect.width() - x_offset - 16, rect.height()),
             QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,
             self.title,
         )
@@ -392,9 +413,20 @@ class MainWin(QtWidgets.QMainWindow):
             event.accept()
 
 def main():
-    app = QtWidgets.QApplication(sys.argv)
-    w = MainWin(); w.show()
-    sys.exit(app.exec())
+    # Initialize diagnostic logger
+    logger = init_logger()
+    logger.log_system_info()
+    logger.info("Starting Point Align GUI...")
+
+    try:
+        app = QtWidgets.QApplication(sys.argv)
+        w = MainWin()
+        w.show()
+        logger.info("GUI initialized successfully")
+        sys.exit(app.exec())
+    except Exception as e:
+        logger.log_exception(e, "main application startup")
+        raise
 
 if __name__ == "__main__":
     main()

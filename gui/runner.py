@@ -6,6 +6,7 @@ from __future__ import annotations
 import os, sys, datetime, subprocess
 from pathlib import Path
 from qt_compat import QtCore
+from diagnostic_logger import get_logger
 
 def resource_path(rel_path: str) -> Path:
     """Return absolute path to bundled resource (PyInstaller-safe)."""
@@ -24,12 +25,14 @@ class ExternalRunner(QtCore.QThread):
         self.script_rel = script_rel
 
     def run(self):
+        logger = get_logger()
+
         # Use bundled runner script
         script_path = resource_path(self.script_rel)
         if not script_path.exists():
-            self.line_ready.emit(
-                "[ERROR] Bundled runner script not found. Rebuild with --add-data \"point_align_batch_runner_gui.py;.\".\n"
-            )
+            error_msg = "[ERROR] Bundled runner script not found. Rebuild with --add-data \"point_align_batch_runner_gui.py;.\".\n"
+            logger.error(f"Runner script not found: {script_path}")
+            self.line_ready.emit(error_msg)
             self.finished_with_code.emit(1)
             return
 
@@ -37,6 +40,7 @@ class ExternalRunner(QtCore.QThread):
         ts = datetime.datetime.now().strftime("%Y%m%d_%H%M%S")
         log_path = Path(os.getenv("TEMP", str(Path.home()))) / f"PointAlign_run_{ts}.log"
         self.logfile_ready.emit(str(log_path))
+        logger.info(f"Run log file: {log_path}")
 
         # Use bundled Python if frozen (PyInstaller), otherwise use system Python
         if getattr(sys, 'frozen', False):
@@ -44,12 +48,13 @@ class ExternalRunner(QtCore.QThread):
             # sys.executable would point to the GUI app, not a Python interpreter
             console_runner = Path(sys.executable).parent / "console_runner.exe"
             if not console_runner.exists():
-                self.line_ready.emit(
-                    f"[ERROR] Console runner not found at {console_runner}. Rebuild with updated spec.\n"
-                )
+                error_msg = f"[ERROR] Console runner not found at {console_runner}. Rebuild with updated spec.\n"
+                logger.error(error_msg)
+                self.line_ready.emit(error_msg)
                 self.finished_with_code.emit(1)
                 return
             cmd = [str(console_runner), str(script_path), *self.argv_list]
+            logger.debug(f"Using console runner: {console_runner}")
         else:
             # Running from source - prefer system Python
             cmd = None
@@ -59,11 +64,14 @@ class ExternalRunner(QtCore.QThread):
                         cand + ["--version"], stderr=subprocess.STDOUT, text=True, timeout=3
                     )
                     cmd = cand + ["-u", str(script_path), *self.argv_list]
+                    logger.debug(f"Using Python command: {cand}")
                     break
                 except Exception:
                     continue
             if cmd is None:
-                self.line_ready.emit("[ERROR] No system Python found on PATH.\n")
+                error_msg = "[ERROR] No system Python found on PATH.\n"
+                logger.error("No Python interpreter found")
+                self.line_ready.emit(error_msg)
                 self.finished_with_code.emit(1)
                 return
 
@@ -73,10 +81,12 @@ class ExternalRunner(QtCore.QThread):
 
         pretty_cmd = " ".join(f'"{c}"' if " " in c else c for c in cmd)
         self.started_with_cmd.emit(pretty_cmd + "\n")
+        logger.log_process_start(cmd)
 
         try:
             # CREATE_NO_WINDOW on Windows
             creationflags = 0x08000000 if os.name == "nt" else 0
+            logger.debug(f"Starting subprocess with creationflags={creationflags}")
             with open(log_path, "w", encoding="utf-8", errors="replace") as lf:
                 proc = subprocess.Popen(
                     cmd,
@@ -93,9 +103,13 @@ class ExternalRunner(QtCore.QThread):
                     lf.write(line)
                     lf.flush()
                     self.line_ready.emit(line)
+                    logger.log_process_output(line.rstrip())
                 rc = proc.wait()
+                logger.info(f"Process completed with exit code: {rc}")
         except Exception as e:
-            self.line_ready.emit(f"[ERROR] Failed to start external Python: {e}\n")
+            error_msg = f"[ERROR] Failed to start external Python: {e}\n"
+            logger.log_exception(e, "subprocess execution")
+            self.line_ready.emit(error_msg)
             self.finished_with_code.emit(1)
             return
 

@@ -8,6 +8,7 @@ from pathlib import Path
 from typing import List, Optional
 
 from qt_compat import QtCore, QtGui, QtWidgets
+from diagnostic_logger import get_logger
 
 # ---- Constants mirrored from the legacy main ----
 APP_TITLE = "Point Align v1.1"
@@ -108,11 +109,29 @@ class AlignTab(QtWidgets.QWidget):
         grp_run = QtWidgets.QGroupBox("Run")
         grid.addWidget(grp_run, 2, 0, 1, 2)
         g3 = QtWidgets.QVBoxLayout(grp_run)
+
+        # Run button and verbose debug checkbox
+        run_row = QtWidgets.QHBoxLayout()
         self.btn_run = QtWidgets.QPushButton("Run")
         self.btn_run.setToolTip("Start the alignment process (Ctrl+Enter)")
         self.btn_run.setShortcut("Ctrl+Return")
         self.btn_run.clicked.connect(self._emit_run)
-        g3.addWidget(self.btn_run)
+        run_row.addWidget(self.btn_run)
+
+        self.chk_verbose = QtWidgets.QCheckBox("Verbose Debug Mode")
+        self.chk_verbose.setToolTip("Enable detailed diagnostic logging to help troubleshoot issues.\nLog file saved to: PointAlign_debug.log")
+        self.chk_verbose.toggled.connect(self._on_verbose_toggled)
+        run_row.addWidget(self.chk_verbose)
+
+        self.btn_open_log = QtWidgets.QPushButton("Open Log Folder")
+        self.btn_open_log.setToolTip("Open the folder containing the debug log file")
+        self.btn_open_log.clicked.connect(self._open_log_folder)
+        run_row.addWidget(self.btn_open_log)
+
+        run_row.addStretch(1)
+
+        g3.addLayout(run_row)
+
         self.progress = QtWidgets.QProgressBar()
         self.progress.setRange(0, 0)
         self.progress.setVisible(False)
@@ -259,6 +278,42 @@ class AlignTab(QtWidgets.QWidget):
             return {'symbol': '⚠ Fair', 'color': QtGui.QColor('#FFAA00')}  # Orange
         else:
             return {'symbol': '✗ Poor', 'color': QtGui.QColor('#CC0000')}  # Red
+
+    def _on_verbose_toggled(self, checked: bool):
+        """Handle verbose debug mode toggle."""
+        logger = get_logger()
+        logger.set_verbose(checked)
+        if checked:
+            self.appendLog(f"\n[Verbose debug mode enabled - logging to {logger.get_log_path()}]\n")
+        else:
+            self.appendLog("\n[Verbose debug mode disabled]\n")
+
+    def _open_log_folder(self):
+        """Open the folder containing the debug log file."""
+        import subprocess
+        import sys
+        logger = get_logger()
+        log_path = Path(logger.get_log_path())
+        log_folder = log_path.parent
+
+        try:
+            if sys.platform == 'win32':
+                # Windows: open folder and select the file
+                subprocess.Popen(['explorer', '/select,', str(log_path)])
+            elif sys.platform == 'darwin':
+                # macOS: open folder
+                subprocess.Popen(['open', str(log_folder)])
+            else:
+                # Linux: open folder
+                subprocess.Popen(['xdg-open', str(log_folder)])
+            logger.info(f"Opened log folder: {log_folder}")
+        except Exception as e:
+            logger.log_exception(e, "opening log folder")
+            QtWidgets.QMessageBox.information(
+                self,
+                "Log File Location",
+                f"Debug log file is located at:\n{log_path}"
+            )
 
     # ---------- UI helpers ----------
     def _toggle_non_pw_panel(self, checked: bool):
@@ -434,13 +489,18 @@ class AlignTab(QtWidgets.QWidget):
 
     # Emit run
     def _emit_run(self):
+        logger = get_logger()
         try:
+            logger.info("Building command line arguments...")
             argv = self.build_argv()
+            logger.info(f"Command arguments: {argv}")
         except Exception as e:
+            logger.log_exception(e, "building command arguments")
             QtWidgets.QMessageBox.critical(self, "Invalid settings", str(e));
             return
         self.setProgressVisible(True)
         self.appendLog("Launching (external Python subprocess)…\n")
+        logger.info("Emitting run request signal...")
         self.runRequested.emit(argv)
 
     # Preferences
