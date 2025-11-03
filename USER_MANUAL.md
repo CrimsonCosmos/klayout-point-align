@@ -32,7 +32,7 @@ Point Order:
 
 ![Alignment Points Diagram](example_points_for_manual.png)
 
-The diagram shows the 4 alignment points (white crosshairs) where the L-shaped alignment marks meet the corner boxes. Click in order: Top-Left, Top-Right, Bottom-Left, Bottom-Right.
+The diagram shows the 4 alignment points where the L-shaped alignment marks meet the corner boxes. Click in order: Top-Left, Top-Right, Bottom-Left, Bottom-Right.
 
 ### Step 5: View in KLayout
 - Double-click the output `.lys` file to open it in KLayout
@@ -70,25 +70,6 @@ The diagram shows the 4 alignment points (white crosshairs) where the L-shaped a
 **Causes:**
 - Clicked wrong points
 - Used wrong point order
-
----
-
-## How LYS Works
-
-### Coordinate Systems
-
-**Image Space:** Pixels (top-left origin)
-
-**GDS Space:** Micrometers (center origin)
-
-**Transformation:** Image pixels → GDS micrometers via calculated matrix
-
-### File Format
-
-.lys files are XML-based with structure:
-- `<layout-view>`: GDS layout reference
-- `<images>`: List of image annotations
-- Each image contains path and transformation matrix
 
 ---
 
