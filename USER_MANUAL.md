@@ -53,8 +53,6 @@ The diagram shows the 4 alignment points (white crosshairs) where the L-shaped a
 ### File Locations
 **Default output:** Desktop folder named `Aligned-YYYY-MM-DD-#.lys`
 
-**Session backups:** Saved in `lys_sessions/backups/`
-
 ---
 
 ## Troubleshooting
@@ -118,7 +116,6 @@ Format: `(X1,Y1),(X2,Y2),(X3,Y3),(X4,Y4)` in micrometers
 
 ### Session Management
 - Sessions auto-saved with timestamps
-- Backups kept in `lys_sessions/backups/`
 - Prevents overwriting existing work
 
 ---
