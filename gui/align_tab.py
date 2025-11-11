@@ -5,7 +5,8 @@
 from __future__ import annotations
 import datetime
 from pathlib import Path
-from typing import List, Optional
+from typing import List, Optional, Dict
+import json
 
 from qt_compat import QtCore, QtGui, QtWidgets
 from diagnostic_logger import get_logger
@@ -14,6 +15,7 @@ from diagnostic_logger import get_logger
 APP_TITLE = "Point Align v1.1"
 COMBINED_FILENAME = "session_combined.lys"
 PREFS_NAME = "align_gui_prefs.json"
+LANDMARKS_PREFS_NAME = "landmark_presets.json"
 
 # Template .lys shipped with the app
 LYS_BASENAME = "Test_with_img.lys"
@@ -28,14 +30,88 @@ def resource_path(rel_path: str) -> Path:
     base = Path(getattr(__import__("sys").modules["sys"], "_MEIPASS", Path(__file__).resolve().parent.parent))
     return base / rel_path
 
+
+class ImageStripWidget(QtWidgets.QWidget):
+    """Custom widget representing a single image with checkbox, thumbnail, name, and align button."""
+
+    alignRequested = QtCore.Signal(str)  # emits image path when Align clicked
+    checkStateChanged = QtCore.Signal(str, bool)  # emits (path, checked)
+
+    def __init__(self, image_path: str, parent: Optional[QtWidgets.QWidget] = None):
+        super().__init__(parent)
+        self.image_path = image_path
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QtWidgets.QHBoxLayout(self)
+        layout.setContentsMargins(4, 4, 4, 4)
+        layout.setSpacing(8)
+
+        # Checkbox
+        self.checkbox = QtWidgets.QCheckBox()
+        self.checkbox.setToolTip("Select this image for bulk operations")
+        self.checkbox.stateChanged.connect(self._on_check_changed)
+        layout.addWidget(self.checkbox)
+
+        # Thumbnail
+        thumbnail_label = QtWidgets.QLabel()
+        thumbnail = self._create_thumbnail(self.image_path, 48)
+        if thumbnail:
+            thumbnail_label.setPixmap(thumbnail)
+        else:
+            thumbnail_label.setText("[No preview]")
+        thumbnail_label.setFixedSize(48, 48)
+        thumbnail_label.setAlignment(QtCore.Qt.AlignCenter)
+        layout.addWidget(thumbnail_label)
+
+        # Image name
+        name_label = QtWidgets.QLabel(Path(self.image_path).name)
+        name_label.setToolTip(self.image_path)
+        layout.addWidget(name_label, 1)
+
+        # Align button
+        self.align_btn = QtWidgets.QPushButton("Align")
+        self.align_btn.setToolTip("Align this image")
+        self.align_btn.setMaximumWidth(80)
+        self.align_btn.clicked.connect(self._on_align_clicked)
+        layout.addWidget(self.align_btn)
+
+    def _create_thumbnail(self, img_path: str, size: int = 48) -> Optional[QtGui.QPixmap]:
+        """Create a thumbnail pixmap from an image file."""
+        try:
+            qimg = QtGui.QImage(img_path)
+            if qimg.isNull():
+                return None
+            pixmap = QtGui.QPixmap.fromImage(qimg)
+            return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+        except Exception:
+            return None
+
+    def _on_align_clicked(self):
+        self.alignRequested.emit(self.image_path)
+
+    def _on_check_changed(self, state):
+        self.checkStateChanged.emit(self.image_path, state == QtCore.Qt.Checked)
+
+    def is_checked(self) -> bool:
+        return self.checkbox.isChecked()
+
+    def set_checked(self, checked: bool):
+        self.checkbox.setChecked(checked)
+
+
 class AlignTab(QtWidgets.QWidget):
     runRequested = QtCore.Signal(list)  # emits argv list when user clicks Run
+    singleAlignRequested = QtCore.Signal(str)  # emits single image path for alignment
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
         self._prefs_file = Path(__file__).parent.parent / "align_tab_prefs.json"
+        self._landmarks_file = Path(__file__).parent.parent / LANDMARKS_PREFS_NAME
+        self.image_strips: Dict[str, ImageStripWidget] = {}  # path -> widget
         self._build_ui()
         self._load_preferences()
+        self._load_landmark_presets()
 
     # ---------------- UI ----------------
     def _build_ui(self):
@@ -51,22 +127,41 @@ class AlignTab(QtWidgets.QWidget):
         grp_in = QtWidgets.QGroupBox("Input Images")
         grid.addWidget(grp_in, 0, 0, 1, 2)
         g1 = QtWidgets.QVBoxLayout(grp_in)
+
+        # Top row: Add button, Select All checkbox, Clear link
         row = QtWidgets.QHBoxLayout()
         self.btn_add = QtWidgets.QPushButton("Add images…")
         self.btn_add.setToolTip("Select one or more images to align (JPG, PNG, TIF, etc.)")
         self.btn_add.clicked.connect(self.add_images)
         row.addWidget(self.btn_add)
+
+        self.chk_select_all = QtWidgets.QCheckBox("Select All")
+        self.chk_select_all.setToolTip("Select/deselect all images for bulk operations")
+        self.chk_select_all.stateChanged.connect(self._on_select_all_changed)
+        row.addWidget(self.chk_select_all)
+
         row.addStretch(1)
         self.lbl_clear = QtWidgets.QLabel('<a href="#">Clear list</a>')
         self.lbl_clear.setToolTip("Remove all images from the list")
         self.lbl_clear.linkActivated.connect(self.clear_list)
         row.addWidget(self.lbl_clear)
         g1.addLayout(row)
-        self.list = QtWidgets.QListWidget()
-        self.list.setIconSize(QtCore.QSize(64, 64))  # Set thumbnail size
-        self.list.setSpacing(2)  # Add spacing between items
-        self.list.setToolTip("Images to be aligned. Hover over each to see the full path.")
-        g1.addWidget(self.list)
+
+        # Scroll area for image strips
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+        scroll.setToolTip("Images to be aligned. Check boxes to select for bulk operations.")
+
+        # Container widget for image strips
+        self.image_container = QtWidgets.QWidget()
+        self.image_layout = QtWidgets.QVBoxLayout(self.image_container)
+        self.image_layout.setContentsMargins(0, 0, 0, 0)
+        self.image_layout.setSpacing(2)
+        self.image_layout.addStretch(1)  # Push strips to top
+
+        scroll.setWidget(self.image_container)
+        g1.addWidget(scroll)
 
         # Output
         grp_out = QtWidgets.QGroupBox("Output")
@@ -174,6 +269,21 @@ class AlignTab(QtWidgets.QWidget):
         row_gds.addWidget(btn_pick_gds, 0)
         non_pw_layout.addRow("Custom GDS file:", row_gds)
 
+        # Row: landmark presets dropdown
+        row_presets = QtWidgets.QHBoxLayout()
+        row_presets.setSpacing(6)
+        row_presets.setContentsMargins(0, 0, 0, 0)
+        self.combo_presets = QtWidgets.QComboBox()
+        self.combo_presets.setToolTip("Select a saved landmark preset")
+        self.combo_presets.currentTextChanged.connect(self._on_preset_selected)
+        self.btn_delete_preset = QtWidgets.QPushButton("Delete")
+        self.btn_delete_preset.setToolTip("Delete the selected landmark preset")
+        self.btn_delete_preset.setMaximumWidth(70)
+        self.btn_delete_preset.clicked.connect(self._delete_current_preset)
+        row_presets.addWidget(self.combo_presets, 1)
+        row_presets.addWidget(self.btn_delete_preset, 0)
+        non_pw_layout.addRow("Select GDS Landmarks:", row_presets)
+
         # Row: custom landmarker points (µm)
         self.chk_custom_after = QtWidgets.QCheckBox("Custom landmarker points (µm)")
         self.chk_custom_after.setToolTip("Enable this to specify custom fiducial marker positions instead of using defaults")
@@ -234,6 +344,21 @@ class AlignTab(QtWidgets.QWidget):
         non_pw_layout.addRow(self.after_points_panel)
 
         self._update_after_enabled(False)
+
+        # Row: save new preset
+        save_preset_row = QtWidgets.QHBoxLayout()
+        save_preset_row.setSpacing(6)
+        save_preset_row.setContentsMargins(0, 0, 0, 0)
+        self.txt_preset_name = QtWidgets.QLineEdit()
+        self.txt_preset_name.setPlaceholderText("Enter preset name...")
+        self.txt_preset_name.setToolTip("Enter a name for the new landmark preset")
+        self.btn_save_preset = QtWidgets.QPushButton("Save Preset")
+        self.btn_save_preset.setToolTip("Save current landmark coordinates as a new preset")
+        self.btn_save_preset.setMaximumWidth(100)
+        self.btn_save_preset.clicked.connect(self._save_new_preset)
+        save_preset_row.addWidget(self.txt_preset_name, 1)
+        save_preset_row.addWidget(self.btn_save_preset, 0)
+        non_pw_layout.addRow("Save as new preset:", save_preset_row)
 
         # Add to main
         grid.addWidget(self.btn_non_pw, 3, 0, 1, 2)
@@ -345,20 +470,23 @@ class AlignTab(QtWidgets.QWidget):
         filt = "Images (*.jpg *.jpeg *.png *.bmp *.tif *.tiff);;All files (*.*)"
         paths, _ = QtWidgets.QFileDialog.getOpenFileNames(self, "Select images", "", filt)
         for p in paths:
-            if not any(self.list.item(i).text() == p for i in range(self.list.count())):
-                item = QtWidgets.QListWidgetItem(Path(p).name)
-                item.setToolTip(p)  # Full path in tooltip
-                item.setData(QtCore.Qt.UserRole, p)  # Store full path
+            if p not in self.image_strips:
+                # Create image strip widget
+                strip = ImageStripWidget(p, self.image_container)
+                strip.alignRequested.connect(self._on_single_align_requested)
+                strip.checkStateChanged.connect(self._on_strip_check_changed)
 
-                # Create thumbnail
-                thumbnail = self._create_thumbnail(p)
-                if thumbnail:
-                    item.setIcon(QtGui.QIcon(thumbnail))
-
-                self.list.addItem(item)
+                # Add to layout (before the stretch)
+                self.image_layout.insertWidget(self.image_layout.count() - 1, strip)
+                self.image_strips[p] = strip
 
     def clear_list(self, *_):
-        self.list.clear()
+        # Remove all image strips
+        for strip in list(self.image_strips.values()):
+            self.image_layout.removeWidget(strip)
+            strip.deleteLater()
+        self.image_strips.clear()
+        self.chk_select_all.setChecked(False)
 
     def choose_output_folder(self):
         # Default to parent folder of last .lys if available
@@ -395,19 +523,46 @@ class AlignTab(QtWidgets.QWidget):
             self._save_preferences()
 
     def current_images(self) -> List[str]:
-        return [self.list.item(i).data(QtCore.Qt.UserRole) for i in range(self.list.count())]
+        """Return all image paths in order."""
+        return list(self.image_strips.keys())
 
-    def _create_thumbnail(self, img_path: str, size: int = 64) -> Optional[QtGui.QPixmap]:
-        """Create a thumbnail pixmap from an image file."""
+    def selected_images(self) -> List[str]:
+        """Return only checked image paths."""
+        return [path for path, strip in self.image_strips.items() if strip.is_checked()]
+
+    def _on_select_all_changed(self, state):
+        """Handle select all checkbox state change."""
+        checked = (state == QtCore.Qt.Checked)
+        for strip in self.image_strips.values():
+            strip.set_checked(checked)
+
+    def _on_strip_check_changed(self, path: str, checked: bool):
+        """Handle individual strip checkbox change."""
+        # Update select-all checkbox state
+        if not checked:
+            # If any strip is unchecked, uncheck select-all
+            self.chk_select_all.setChecked(False)
+        else:
+            # If all strips are checked, check select-all
+            if all(strip.is_checked() for strip in self.image_strips.values()):
+                self.chk_select_all.setChecked(True)
+
+    def _on_single_align_requested(self, image_path: str):
+        """Handle single image align button click."""
+        logger = get_logger()
         try:
-            qimg = QtGui.QImage(img_path)
-            if qimg.isNull():
-                return None
-            # Scale to thumbnail size while maintaining aspect ratio
-            pixmap = QtGui.QPixmap.fromImage(qimg)
-            return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
-        except Exception:
-            return None
+            logger.info(f"Single align requested for: {image_path}")
+            # Build argv for just this one image
+            argv = self._build_argv_for_images([image_path])
+            logger.info(f"Command arguments: {argv}")
+        except Exception as e:
+            logger.log_exception(e, "building command arguments for single image")
+            QtWidgets.QMessageBox.critical(self, "Invalid settings", str(e))
+            return
+        self.setProgressVisible(True)
+        self.appendLog(f"Aligning {Path(image_path).name}...\n")
+        logger.info("Emitting run request signal...")
+        self.runRequested.emit(argv)
 
     def compute_dated_lys_path(self, base: Path) -> Path:
         """Generate a unique .lys filename like Aligned-2025-10-28.lys"""
@@ -432,17 +587,36 @@ class AlignTab(QtWidgets.QWidget):
         return ""
 
     def _collect_after_points_str(self) -> str:
-        if not self.btn_non_pw.isChecked() or not self.chk_custom_after.isChecked():
+        # If Custom Align Markers panel is not open, use defaults
+        if not self.btn_non_pw.isChecked():
             return DEFAULT_AFTER_POINTS
-        tl = (self.tl_x.value(), self.tl_y.value())
-        tr = (self.tr_x.value(), self.tr_y.value())
-        bl = (self.bl_x.value(), self.bl_y.value())
-        br = (self.br_x.value(), self.br_y.value())
-        def fmt(p): return f"({p[0]:.3f},{p[1]:.3f})"
-        return ",".join([fmt(tl), fmt(tr), fmt(bl), fmt(br)])
 
-    def build_argv(self) -> list:
-        files = self.current_images()
+        # If custom checkbox is checked, use the spinbox values directly
+        if self.chk_custom_after.isChecked():
+            tl = (self.tl_x.value(), self.tl_y.value())
+            tr = (self.tr_x.value(), self.tr_y.value())
+            bl = (self.bl_x.value(), self.bl_y.value())
+            br = (self.br_x.value(), self.br_y.value())
+            def fmt(p): return f"({p[0]:.3f},{p[1]:.3f})"
+            return ",".join([fmt(tl), fmt(tr), fmt(bl), fmt(br)])
+
+        # Otherwise, use the selected preset (which already loaded into spinboxes)
+        # This allows presets to work even when custom checkbox is not checked
+        preset_name = self.combo_presets.currentText()
+        if preset_name and preset_name != "[Default]":
+            # Use values from spinboxes (already loaded by preset selection)
+            tl = (self.tl_x.value(), self.tl_y.value())
+            tr = (self.tr_x.value(), self.tr_y.value())
+            bl = (self.bl_x.value(), self.bl_y.value())
+            br = (self.br_x.value(), self.br_y.value())
+            def fmt(p): return f"({p[0]:.3f},{p[1]:.3f})"
+            return ",".join([fmt(tl), fmt(tr), fmt(bl), fmt(br)])
+
+        # Fall back to default
+        return DEFAULT_AFTER_POINTS
+
+    def _build_argv_for_images(self, files: List[str]) -> list:
+        """Build argv for a specific list of image files."""
         if not files:
             raise RuntimeError("No images selected.")
 
@@ -487,13 +661,33 @@ class AlignTab(QtWidgets.QWidget):
         argv.extend(["--gds-file", gds_override or self.resolve_gds()])
         return argv
 
+    def build_argv(self) -> list:
+        """Build argv using selected images, or all images if none selected."""
+        selected = self.selected_images()
+        files = selected if selected else self.current_images()
+        return self._build_argv_for_images(files)
+
     # Emit run
     def _emit_run(self):
         logger = get_logger()
         try:
             logger.info("Building command line arguments...")
+            selected = self.selected_images()
+            files = selected if selected else self.current_images()
+
+            if not files:
+                QtWidgets.QMessageBox.information(self, "No Images", "Please add images to align.")
+                return
+
             argv = self.build_argv()
             logger.info(f"Command arguments: {argv}")
+
+            # Show what we're processing
+            if selected:
+                self.appendLog(f"Processing {len(selected)} selected image(s)...\n")
+            else:
+                self.appendLog(f"Processing all {len(files)} image(s)...\n")
+
         except Exception as e:
             logger.log_exception(e, "building command arguments")
             QtWidgets.QMessageBox.critical(self, "Invalid settings", str(e));
@@ -520,7 +714,6 @@ class AlignTab(QtWidgets.QWidget):
     def _save_preferences(self):
         """Save current output path to preferences"""
         try:
-            import json
             prefs = {
                 'last_output_path': self.out_path.text().strip()
             }
@@ -528,3 +721,187 @@ class AlignTab(QtWidgets.QWidget):
                 json.dump(prefs, f)
         except Exception:
             pass
+
+    # ---------- Landmark Preset Management ----------
+    def _load_landmark_presets(self):
+        """Load landmark presets from JSON file and populate dropdown."""
+        logger = get_logger()
+        try:
+            # Always add [Default] option
+            self.combo_presets.clear()
+            self.combo_presets.addItem("[Default]")
+
+            # Load saved presets if file exists
+            if self._landmarks_file.exists():
+                with open(self._landmarks_file, 'r') as f:
+                    presets = json.load(f)
+                    for name in sorted(presets.keys()):
+                        self.combo_presets.addItem(name)
+
+            # Update delete button state
+            self._update_delete_button_state()
+            logger.info(f"Loaded {self.combo_presets.count() - 1} landmark presets")
+        except Exception as e:
+            logger.log_exception(e, "loading landmark presets")
+
+    def _save_landmark_presets(self, presets: Dict[str, Dict]):
+        """Save landmark presets to JSON file."""
+        logger = get_logger()
+        try:
+            with open(self._landmarks_file, 'w') as f:
+                json.dump(presets, f, indent=2)
+            logger.info(f"Saved {len(presets)} landmark presets")
+        except Exception as e:
+            logger.log_exception(e, "saving landmark presets")
+
+    def _get_all_presets(self) -> Dict[str, Dict]:
+        """Load all presets from file."""
+        if not self._landmarks_file.exists():
+            return {}
+        try:
+            with open(self._landmarks_file, 'r') as f:
+                return json.load(f)
+        except Exception:
+            return {}
+
+    def _on_preset_selected(self, preset_name: str):
+        """Load selected preset into the spinboxes."""
+        logger = get_logger()
+        if not preset_name or preset_name == "[Default]":
+            # Load default values
+            self._load_default_landmarks()
+            self._update_delete_button_state()
+            return
+
+        try:
+            presets = self._get_all_presets()
+            if preset_name in presets:
+                coords = presets[preset_name]
+                self.tl_x.setValue(coords['tl_x'])
+                self.tl_y.setValue(coords['tl_y'])
+                self.tr_x.setValue(coords['tr_x'])
+                self.tr_y.setValue(coords['tr_y'])
+                self.bl_x.setValue(coords['bl_x'])
+                self.bl_y.setValue(coords['bl_y'])
+                self.br_x.setValue(coords['br_x'])
+                self.br_y.setValue(coords['br_y'])
+                logger.info(f"Loaded preset: {preset_name}")
+        except Exception as e:
+            logger.log_exception(e, f"loading preset '{preset_name}'")
+            QtWidgets.QMessageBox.warning(self, "Load Error", f"Failed to load preset: {str(e)}")
+
+        self._update_delete_button_state()
+
+    def _load_default_landmarks(self):
+        """Load default landmark values into spinboxes."""
+        # Parse DEFAULT_AFTER_POINTS: "(-50,60),(70,60),(-50,-60),(70,-60)"
+        self.tl_x.setValue(-50)
+        self.tl_y.setValue(60)
+        self.tr_x.setValue(70)
+        self.tr_y.setValue(60)
+        self.bl_x.setValue(-50)
+        self.bl_y.setValue(-60)
+        self.br_x.setValue(70)
+        self.br_y.setValue(-60)
+
+    def _save_new_preset(self):
+        """Save current landmark coordinates as a new preset."""
+        logger = get_logger()
+        preset_name = self.txt_preset_name.text().strip()
+
+        if not preset_name:
+            QtWidgets.QMessageBox.warning(self, "Invalid Name", "Please enter a name for the preset.")
+            return
+
+        if preset_name == "[Default]":
+            QtWidgets.QMessageBox.warning(self, "Invalid Name", "Cannot use '[Default]' as a preset name.")
+            return
+
+        # Get current coordinates
+        coords = {
+            'tl_x': self.tl_x.value(),
+            'tl_y': self.tl_y.value(),
+            'tr_x': self.tr_x.value(),
+            'tr_y': self.tr_y.value(),
+            'bl_x': self.bl_x.value(),
+            'bl_y': self.bl_y.value(),
+            'br_x': self.br_x.value(),
+            'br_y': self.br_y.value(),
+        }
+
+        # Load existing presets
+        presets = self._get_all_presets()
+
+        # Check if name already exists
+        if preset_name in presets:
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Overwrite Preset?",
+                f"A preset named '{preset_name}' already exists. Overwrite it?",
+                QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+                QtWidgets.QMessageBox.No
+            )
+            if reply != QtWidgets.QMessageBox.Yes:
+                return
+
+        # Save preset
+        presets[preset_name] = coords
+        self._save_landmark_presets(presets)
+
+        # Reload dropdown
+        current_selection = preset_name
+        self._load_landmark_presets()
+
+        # Select the newly saved preset
+        index = self.combo_presets.findText(preset_name)
+        if index >= 0:
+            self.combo_presets.setCurrentIndex(index)
+
+        # Clear the name field
+        self.txt_preset_name.clear()
+
+        QtWidgets.QMessageBox.information(self, "Preset Saved", f"Landmark preset '{preset_name}' saved successfully.")
+        logger.info(f"Saved new preset: {preset_name}")
+
+    def _delete_current_preset(self):
+        """Delete the currently selected preset."""
+        logger = get_logger()
+        preset_name = self.combo_presets.currentText()
+
+        if not preset_name or preset_name == "[Default]":
+            QtWidgets.QMessageBox.information(self, "Cannot Delete", "Cannot delete the [Default] preset.")
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Delete Preset?",
+            f"Are you sure you want to delete the preset '{preset_name}'?",
+            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.No,
+            QtWidgets.QMessageBox.No
+        )
+
+        if reply != QtWidgets.QMessageBox.Yes:
+            return
+
+        try:
+            # Load presets
+            presets = self._get_all_presets()
+
+            if preset_name in presets:
+                del presets[preset_name]
+                self._save_landmark_presets(presets)
+
+                # Reload dropdown and select [Default]
+                self._load_landmark_presets()
+                self.combo_presets.setCurrentIndex(0)  # Select [Default]
+
+                QtWidgets.QMessageBox.information(self, "Preset Deleted", f"Landmark preset '{preset_name}' deleted successfully.")
+                logger.info(f"Deleted preset: {preset_name}")
+        except Exception as e:
+            logger.log_exception(e, f"deleting preset '{preset_name}'")
+            QtWidgets.QMessageBox.warning(self, "Delete Error", f"Failed to delete preset: {str(e)}")
+
+    def _update_delete_button_state(self):
+        """Enable/disable delete button based on current selection."""
+        current = self.combo_presets.currentText()
+        self.btn_delete_preset.setEnabled(current != "[Default]" and current != "")
