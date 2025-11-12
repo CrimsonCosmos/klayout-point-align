@@ -240,6 +240,18 @@ except ModuleNotFoundError:
     except Exception:
         pass
 
+    # ---- Qt WindowModality compatibility ----
+    try:
+        _Qt = QtCore.Qt
+        if not hasattr(_Qt, 'ApplicationModal'):
+            _Qt.ApplicationModal = _Qt.WindowModality.ApplicationModal
+        if not hasattr(_Qt, 'WindowModal'):
+            _Qt.WindowModal = _Qt.WindowModality.WindowModal
+        if not hasattr(_Qt, 'NonModal'):
+            _Qt.NonModal = _Qt.WindowModality.NonModal
+    except Exception:
+        pass
+
     try:
         _FL = QtWidgets.QFormLayout
         _FL.AllNonFixedFieldsGrow = getattr(_FL, 'AllNonFixedFieldsGrow', _FL.FieldGrowthPolicy.AllNonFixedFieldsGrow)

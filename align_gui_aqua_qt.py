@@ -9,7 +9,6 @@ from qt_compat import QtCore, QtGui, QtWidgets
 
 from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner
-from lys_editor_tab import LYSTab
 from diagnostic_logger import init_logger
 
 APP_TITLE = "Point Align v1.1"
@@ -305,18 +304,16 @@ class MainWin(QtWidgets.QMainWindow):
         self.header = AquaHeader(APP_TITLE)
         root.addWidget(self.header)
 
-        self.tabs = QtWidgets.QTabWidget()
-        self.tabs.setDocumentMode(True)
-        self.tabs.setTabPosition(QtWidgets.QTabWidget.TabPosition.North)
-        root.addWidget(self.tabs, 1)
+        # No tabs - single unified interface wrapped in scroll area
+        # (All LYS editing features integrated into Align tab)
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidgetResizable(True)
+        scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarPolicy.ScrollBarAlwaysOff)
+        scroll.setFrameShape(QtWidgets.QFrame.Shape.NoFrame)
 
-        # Tab 1: Align
         self.align_tab = AlignTab(self)
-        self.tabs.addTab(self.align_tab, "Align")
-
-        # Tab 2: .LYS editing
-        self.lys_tab = LYSTab(parent=self)
-        self.tabs.addTab(self.lys_tab, ".LYS file editing")
+        scroll.setWidget(self.align_tab)
+        root.addWidget(scroll, 1)
 
         # Hook runRequested -> start worker
         self.align_tab.runRequested.connect(self._start_run)
@@ -338,6 +335,8 @@ class MainWin(QtWidgets.QMainWindow):
     def _run_finished(self, code: int):
         self.align_tab.setProgressVisible(False)
         self.align_tab.appendLog(f"\n[Process exited with code {code}]\n")
+        # Notify align tab that alignment finished (will load .lys into editor if successful)
+        self.align_tab.onAlignmentFinished(code)
 
     # Theme management
     def _toggle_theme(self, checked: bool):
@@ -346,8 +345,11 @@ class MainWin(QtWidgets.QMainWindow):
         self._save_preferences()
 
     def _toggle_verbose(self, checked: bool):
-        """Toggle verbose debug mode."""
-        self.align_tab.set_verbose_mode(checked)
+        """Toggle verbose debug mode - show/hide debug window."""
+        if checked:
+            self.align_tab.show_debug_window()
+        else:
+            self.align_tab.hide_debug_window()
 
     def _apply_theme(self):
         app = QtWidgets.QApplication.instance()
@@ -379,47 +381,10 @@ class MainWin(QtWidgets.QMainWindow):
             pass
 
     def closeEvent(self, event):
-        """Handle window close event - prompt if there are unsaved changes."""
-        if self.lys_tab.has_unsaved_changes():
-            reply = QtWidgets.QMessageBox.question(
-                self,
-                "Unsaved Changes",
-                "You have unsaved changes in the .LYS editor.\n\nDo you want to save before closing?",
-                QtWidgets.QMessageBox.StandardButton.Save |
-                QtWidgets.QMessageBox.StandardButton.Discard |
-                QtWidgets.QMessageBox.StandardButton.Cancel,
-                QtWidgets.QMessageBox.StandardButton.Save
-            )
-
-            if reply == QtWidgets.QMessageBox.StandardButton.Save:
-                # Try to save both editors if they have unsaved changes
-                if self.lys_tab.left.has_unsaved_changes():
-                    if self.lys_tab.left._current_path:
-                        self.lys_tab.left.save()
-                    else:
-                        self.lys_tab.left.save_as()
-                        # If user cancelled save dialog, cancel close
-                        if self.lys_tab.left.has_unsaved_changes():
-                            event.ignore()
-                            return
-
-                if self.lys_tab._dual_created and self.lys_tab.right and self.lys_tab.right.has_unsaved_changes():
-                    if self.lys_tab.right._current_path:
-                        self.lys_tab.right.save()
-                    else:
-                        self.lys_tab.right.save_as()
-                        # If user cancelled save dialog, cancel close
-                        if self.lys_tab.right.has_unsaved_changes():
-                            event.ignore()
-                            return
-
-                event.accept()
-            elif reply == QtWidgets.QMessageBox.StandardButton.Discard:
-                event.accept()
-            else:  # Cancel
-                event.ignore()
-        else:
-            event.accept()
+        """Handle window close event."""
+        # In multi-session mode, no central unsaved changes tracking
+        # Sessions are independent
+        event.accept()
 
 def main():
     # Initialize diagnostic logger

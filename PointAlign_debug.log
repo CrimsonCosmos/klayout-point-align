@@ -1,0 +1,1163 @@
+2025-11-03 16:54:57 [INFO] ================================================================================
+2025-11-03 16:54:57 [INFO] PointAlign Debug Log - Session started at 2025-11-03 16:54:57.454017
+2025-11-03 16:54:57 [INFO] ================================================================================
+2025-11-03 16:54:57 [INFO] SYSTEM INFORMATION:
+2025-11-03 16:54:57 [INFO]   OS: Windows 11 (10.0.22621)
+2025-11-03 16:54:57 [INFO]   Platform: Windows-11-10.0.22621-SP0
+2025-11-03 16:54:57 [INFO]   Architecture: AMD64
+2025-11-03 16:54:57 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-03 16:54:57 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-03 16:54:57 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-03 16:54:57 [INFO]   Running as: Python script
+2025-11-03 16:54:57 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-03 16:54:57 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-03 16:54:57 [INFO] 
+INSTALLED PACKAGES:
+2025-11-03 16:54:57 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-03 16:54:57 [ERROR]   Qt Backend: ERROR - cannot import name 'QT_BACKEND' from 'qt_compat' (C:\Users\gehl2\Auto_align_program\qt_compat.py)
+2025-11-03 16:54:57 [INFO]   NumPy: 2.2.6
+2025-11-03 16:54:57 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-03 16:54:57 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-03 16:54:57 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-03 16:54:57 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-03 16:54:57 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-03 16:54:57 [INFO] ================================================================================
+2025-11-11 13:52:25 [INFO] ================================================================================
+2025-11-11 13:52:25 [INFO] PointAlign Debug Log - Session started at 2025-11-11 13:52:25.449239
+2025-11-11 13:52:25 [INFO] ================================================================================
+2025-11-11 13:52:25 [INFO] SYSTEM INFORMATION:
+2025-11-11 13:52:25 [INFO]   OS: Windows 11 (10.0.22621)
+2025-11-11 13:52:25 [INFO]   Platform: Windows-11-10.0.22621-SP0
+2025-11-11 13:52:25 [INFO]   Architecture: AMD64
+2025-11-11 13:52:25 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 13:52:25 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 13:52:25 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 13:52:25 [INFO]   Running as: Python script
+2025-11-11 13:52:25 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 13:52:25 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 13:52:25 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 13:52:26 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 13:52:26 [ERROR]   Qt Backend: ERROR - cannot import name 'QT_BACKEND' from 'qt_compat' (C:\Users\gehl2\Auto_align_program\qt_compat.py)
+2025-11-11 13:52:26 [INFO]   NumPy: 2.2.6
+2025-11-11 13:52:26 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 13:52:26 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 13:52:26 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 13:52:26 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 13:52:26 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 13:52:26 [INFO] ================================================================================
+2025-11-11 13:52:26 [INFO] Starting Point Align GUI...
+2025-11-11 13:52:26 [INFO] Loaded 0 landmark presets
+2025-11-11 13:52:27 [INFO] GUI initialized successfully
+2025-11-11 13:52:48 [INFO] ================================================================================
+2025-11-11 13:52:48 [INFO] PointAlign Debug Log - Session started at 2025-11-11 13:52:48.713539
+2025-11-11 13:52:48 [INFO] ================================================================================
+2025-11-11 13:52:48 [INFO] SYSTEM INFORMATION:
+2025-11-11 13:52:48 [INFO]   OS: Windows 11 (10.0.22621)
+2025-11-11 13:52:48 [INFO]   Platform: Windows-11-10.0.22621-SP0
+2025-11-11 13:52:48 [INFO]   Architecture: AMD64
+2025-11-11 13:52:48 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 13:52:48 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 13:52:48 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 13:52:48 [INFO]   Running as: Python script
+2025-11-11 13:52:48 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 13:52:48 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 13:52:48 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 13:52:49 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 13:52:49 [ERROR]   Qt Backend: ERROR - cannot import name 'QT_BACKEND' from 'qt_compat' (C:\Users\gehl2\Auto_align_program\qt_compat.py)
+2025-11-11 13:52:49 [INFO]   NumPy: 2.2.6
+2025-11-11 13:52:49 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 13:52:49 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 13:52:49 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 13:52:49 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 13:52:49 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 13:52:49 [INFO] ================================================================================
+2025-11-11 13:52:49 [INFO] Starting Point Align GUI...
+2025-11-11 13:52:49 [INFO] Loaded 0 landmark presets
+2025-11-11 13:52:49 [INFO] GUI initialized successfully
+2025-11-11 13:54:41 [INFO] Loaded 0 landmark presets
+2025-11-11 13:57:45 [INFO] Loaded 0 landmark presets
+2025-11-11 17:27:51 [INFO] ================================================================================
+2025-11-11 17:27:51 [INFO] PointAlign Debug Log - Session started at 2025-11-11 17:27:51.796553
+2025-11-11 17:27:51 [INFO] ================================================================================
+2025-11-11 17:27:51 [INFO] SYSTEM INFORMATION:
+2025-11-11 17:27:51 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 17:27:52 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 17:27:52 [INFO]   Architecture: AMD64
+2025-11-11 17:27:52 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 17:27:52 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 17:27:52 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 17:27:52 [INFO]   Running as: Python script
+2025-11-11 17:27:52 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:27:52 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:27:52 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 17:27:52 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 17:27:52 [ERROR]   Qt Backend: ERROR - cannot import name 'QT_BACKEND' from 'qt_compat' (C:\Users\gehl2\Auto_align_program\qt_compat.py)
+2025-11-11 17:27:52 [INFO]   NumPy: 2.3.4
+2025-11-11 17:27:52 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 17:27:52 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 17:27:52 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:27:52 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 17:27:52 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 17:27:52 [INFO] ================================================================================
+2025-11-11 17:27:52 [INFO] Starting Point Align GUI...
+2025-11-11 17:27:52 [ERROR] EXCEPTION in main application startup:
+2025-11-11 17:27:52 [ERROR]   Type: AttributeError
+2025-11-11 17:27:52 [ERROR]   Message: type object 'Qt' has no attribute 'ScrollBarAlwaysOff'
+2025-11-11 17:27:52 [ERROR]   Stack trace:
+2025-11-11 17:27:52 [ERROR]     Traceback (most recent call last):
+2025-11-11 17:27:52 [ERROR]       File "C:\Users\gehl2\Auto_align_program\align_gui_aqua_qt.py", line 423, in main
+2025-11-11 17:27:52 [ERROR]         w = MainWin()
+2025-11-11 17:27:52 [ERROR]       File "C:\Users\gehl2\Auto_align_program\align_gui_aqua_qt.py", line 309, in __init__
+2025-11-11 17:27:52 [ERROR]         self.align_tab = AlignTab(self)
+2025-11-11 17:27:52 [ERROR]                          ~~~~~~~~^^^^^^
+2025-11-11 17:27:52 [ERROR]       File "C:\Users\gehl2\Auto_align_program\gui\align_tab.py", line 112, in __init__
+2025-11-11 17:27:52 [ERROR]         self._build_ui()
+2025-11-11 17:27:52 [ERROR]         ~~~~~~~~~~~~~~^^
+2025-11-11 17:27:52 [ERROR]       File "C:\Users\gehl2\Auto_align_program\gui\align_tab.py", line 153, in _build_ui
+2025-11-11 17:27:52 [ERROR]         scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
+2025-11-11 17:27:52 [ERROR]                                             ^^^^^^^^^^^^^^^^^^^^^^^^^^^^
+2025-11-11 17:27:52 [ERROR]     AttributeError: type object 'Qt' has no attribute 'ScrollBarAlwaysOff'
+2025-11-11 17:50:15 [INFO] ================================================================================
+2025-11-11 17:50:15 [INFO] PointAlign Debug Log - Session started at 2025-11-11 17:50:15.297160
+2025-11-11 17:50:15 [INFO] ================================================================================
+2025-11-11 17:50:15 [INFO] SYSTEM INFORMATION:
+2025-11-11 17:50:15 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 17:50:15 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 17:50:15 [INFO]   Architecture: AMD64
+2025-11-11 17:50:15 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 17:50:15 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 17:50:15 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 17:50:15 [INFO]   Running as: Python script
+2025-11-11 17:50:15 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:50:15 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:50:15 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 17:50:15 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 17:50:15 [INFO]   Qt Backend: PyQt6
+2025-11-11 17:50:15 [INFO]   PyQt6: 6.10.0
+2025-11-11 17:50:15 [INFO]   NumPy: 2.3.4
+2025-11-11 17:50:15 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 17:50:15 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 17:50:15 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:50:15 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 17:50:15 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 17:50:15 [INFO] ================================================================================
+2025-11-11 17:50:15 [INFO] Starting Point Align GUI...
+2025-11-11 17:50:15 [INFO] Loaded 0 landmark presets
+2025-11-11 17:50:16 [INFO] GUI initialized successfully
+2025-11-11 17:50:26 [INFO] Single align requested for: C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG
+2025-11-11 17:50:26 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 17:50:26 [INFO] Emitting run request signal...
+2025-11-11 17:50:26 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_175026.log
+2025-11-11 17:50:26 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 17:50:26 [INFO] Starting subprocess:
+2025-11-11 17:50:26 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:50:26 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 17:50:39 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11.lys (RMS=0.103 µm)
+2025-11-11 17:50:39 [DEBUG]   [STDOUT] Done. Appended 1/1 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11.lys
+2025-11-11 17:50:39 [INFO] Process completed with exit code: 0
+2025-11-11 17:51:58 [INFO] ================================================================================
+2025-11-11 17:51:58 [INFO] PointAlign Debug Log - Session started at 2025-11-11 17:51:58.164777
+2025-11-11 17:51:58 [INFO] ================================================================================
+2025-11-11 17:51:58 [INFO] SYSTEM INFORMATION:
+2025-11-11 17:51:58 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 17:51:58 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 17:51:58 [INFO]   Architecture: AMD64
+2025-11-11 17:51:58 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 17:51:58 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 17:51:58 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 17:51:58 [INFO]   Running as: Python script
+2025-11-11 17:51:58 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:51:58 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:51:58 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 17:51:58 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 17:51:58 [INFO]   Qt Backend: PyQt6
+2025-11-11 17:51:58 [INFO]   PyQt6: 6.10.0
+2025-11-11 17:51:58 [INFO]   NumPy: 2.3.4
+2025-11-11 17:51:58 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 17:51:58 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 17:51:58 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:51:58 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 17:51:58 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 17:51:58 [INFO] ================================================================================
+2025-11-11 17:51:58 [INFO] Starting Point Align GUI...
+2025-11-11 17:51:58 [INFO] Loaded 0 landmark presets
+2025-11-11 17:51:59 [INFO] GUI initialized successfully
+2025-11-11 17:54:03 [INFO] ================================================================================
+2025-11-11 17:54:03 [INFO] PointAlign Debug Log - Session started at 2025-11-11 17:54:03.819329
+2025-11-11 17:54:03 [INFO] ================================================================================
+2025-11-11 17:54:03 [INFO] SYSTEM INFORMATION:
+2025-11-11 17:54:03 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 17:54:04 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 17:54:04 [INFO]   Architecture: AMD64
+2025-11-11 17:54:04 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 17:54:04 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 17:54:04 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 17:54:04 [INFO]   Running as: Python script
+2025-11-11 17:54:04 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:54:04 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:54:04 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 17:54:04 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 17:54:04 [INFO]   Qt Backend: PyQt6
+2025-11-11 17:54:04 [INFO]   PyQt6: 6.10.0
+2025-11-11 17:54:04 [INFO]   NumPy: 2.3.4
+2025-11-11 17:54:04 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 17:54:04 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 17:54:04 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:54:04 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 17:54:04 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 17:54:04 [INFO] ================================================================================
+2025-11-11 17:54:04 [INFO] Starting Point Align GUI...
+2025-11-11 17:54:04 [INFO] Loaded 0 landmark presets
+2025-11-11 17:54:04 [INFO] GUI initialized successfully
+2025-11-11 17:58:28 [INFO] ================================================================================
+2025-11-11 17:58:28 [INFO] PointAlign Debug Log - Session started at 2025-11-11 17:58:28.222252
+2025-11-11 17:58:28 [INFO] ================================================================================
+2025-11-11 17:58:28 [INFO] SYSTEM INFORMATION:
+2025-11-11 17:58:28 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 17:58:28 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 17:58:28 [INFO]   Architecture: AMD64
+2025-11-11 17:58:28 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 17:58:28 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 17:58:28 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 17:58:28 [INFO]   Running as: Python script
+2025-11-11 17:58:28 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:58:28 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 17:58:28 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 17:58:28 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 17:58:28 [INFO]   Qt Backend: PyQt6
+2025-11-11 17:58:28 [INFO]   PyQt6: 6.10.0
+2025-11-11 17:58:28 [INFO]   NumPy: 2.3.4
+2025-11-11 17:58:28 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 17:58:28 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 17:58:28 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:58:28 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 17:58:28 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 17:58:28 [INFO] ================================================================================
+2025-11-11 17:58:28 [INFO] Starting Point Align GUI...
+2025-11-11 17:58:28 [INFO] Loaded 0 landmark presets
+2025-11-11 17:58:29 [INFO] GUI initialized successfully
+2025-11-11 17:58:42 [INFO] Single align requested for: C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG
+2025-11-11 17:58:42 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11-2.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 17:58:42 [INFO] Emitting run request signal...
+2025-11-11 17:58:42 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_175842.log
+2025-11-11 17:58:42 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 17:58:42 [INFO] Starting subprocess:
+2025-11-11 17:58:42 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11-2.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 17:58:42 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 17:58:55 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-2.lys (RMS=0.112 µm)
+2025-11-11 17:58:55 [DEBUG]   [STDOUT] Done. Appended 1/1 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11-2.lys
+2025-11-11 17:58:56 [INFO] Process completed with exit code: 0
+2025-11-11 17:59:40 [INFO] Opened log folder: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:01:28 [INFO] ================================================================================
+2025-11-11 18:01:28 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:01:28.361696
+2025-11-11 18:01:28 [INFO] ================================================================================
+2025-11-11 18:01:28 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:01:28 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:01:28 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:01:28 [INFO]   Architecture: AMD64
+2025-11-11 18:01:28 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:01:28 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:01:28 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:01:28 [INFO]   Running as: Python script
+2025-11-11 18:01:28 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:01:28 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:01:28 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:01:28 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:01:28 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:01:28 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:01:28 [INFO]   NumPy: 2.3.4
+2025-11-11 18:01:28 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:01:28 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:01:28 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:01:28 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:01:28 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:01:28 [INFO] ================================================================================
+2025-11-11 18:01:28 [INFO] Starting Point Align GUI...
+2025-11-11 18:01:28 [INFO] Loaded 0 landmark presets
+2025-11-11 18:01:29 [INFO] GUI initialized successfully
+2025-11-11 18:03:49 [INFO] ================================================================================
+2025-11-11 18:03:49 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:03:49.392418
+2025-11-11 18:03:49 [INFO] ================================================================================
+2025-11-11 18:03:49 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:03:49 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:03:49 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:03:49 [INFO]   Architecture: AMD64
+2025-11-11 18:03:49 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:03:49 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:03:49 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:03:49 [INFO]   Running as: Python script
+2025-11-11 18:03:49 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:03:49 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:03:49 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:03:49 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:03:49 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:03:49 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:03:49 [INFO]   NumPy: 2.3.4
+2025-11-11 18:03:49 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:03:49 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:03:49 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:03:49 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:03:49 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:03:49 [INFO] ================================================================================
+2025-11-11 18:03:49 [INFO] Starting Point Align GUI...
+2025-11-11 18:03:49 [INFO] Loaded 0 landmark presets
+2025-11-11 18:03:50 [INFO] GUI initialized successfully
+2025-11-11 18:04:04 [INFO] Single align requested for: C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG
+2025-11-11 18:04:04 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11-3.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 18:04:04 [INFO] Emitting run request signal...
+2025-11-11 18:04:04 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_180404.log
+2025-11-11 18:04:05 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 18:04:05 [INFO] Starting subprocess:
+2025-11-11 18:04:05 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11-3.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:04:05 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 18:04:16 [DEBUG]   [STDOUT] [OK] IMG_2025_07_25_48938.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-3.lys (RMS=0.155 µm)
+2025-11-11 18:04:16 [DEBUG]   [STDOUT] Done. Appended 1/1 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11-3.lys
+2025-11-11 18:04:16 [INFO] Process completed with exit code: 0
+2025-11-11 18:06:52 [INFO] ================================================================================
+2025-11-11 18:06:52 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:06:52.789137
+2025-11-11 18:06:52 [INFO] ================================================================================
+2025-11-11 18:06:52 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:06:52 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:06:52 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:06:52 [INFO]   Architecture: AMD64
+2025-11-11 18:06:52 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:06:52 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:06:52 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:06:52 [INFO]   Running as: Python script
+2025-11-11 18:06:52 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:06:52 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:06:52 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:06:52 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:06:52 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:06:52 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:06:53 [INFO]   NumPy: 2.3.4
+2025-11-11 18:06:53 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:06:53 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:06:53 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:06:53 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:06:53 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:06:53 [INFO] ================================================================================
+2025-11-11 18:06:53 [INFO] Starting Point Align GUI...
+2025-11-11 18:06:53 [INFO] Loaded 0 landmark presets
+2025-11-11 18:06:53 [INFO] GUI initialized successfully
+2025-11-11 18:08:13 [INFO] ================================================================================
+2025-11-11 18:08:13 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:08:13.746991
+2025-11-11 18:08:13 [INFO] ================================================================================
+2025-11-11 18:08:13 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:08:13 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:08:13 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:08:13 [INFO]   Architecture: AMD64
+2025-11-11 18:08:13 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:08:13 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:08:13 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:08:13 [INFO]   Running as: Python script
+2025-11-11 18:08:13 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:08:13 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:08:13 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:08:13 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:08:13 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:08:13 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:08:14 [INFO]   NumPy: 2.3.4
+2025-11-11 18:08:14 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:08:14 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:08:14 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:08:14 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:08:14 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:08:14 [INFO] ================================================================================
+2025-11-11 18:08:14 [INFO] Starting Point Align GUI...
+2025-11-11 18:08:14 [INFO] Loaded 0 landmark presets
+2025-11-11 18:08:14 [INFO] GUI initialized successfully
+2025-11-11 18:08:28 [INFO] Building command line arguments...
+2025-11-11 18:08:28 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG', 'C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11-4.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 18:08:28 [INFO] Emitting run request signal...
+2025-11-11 18:08:28 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_180828.log
+2025-11-11 18:08:28 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 18:08:28 [INFO] Starting subprocess:
+2025-11-11 18:08:28 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11-4.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:08:28 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 18:08:47 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-4.lys (RMS=0.153 µm)
+2025-11-11 18:08:57 [DEBUG]   [STDOUT] [OK] IMG_2025_07_25_48938.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-4.lys (RMS=0.120 µm)
+2025-11-11 18:08:57 [DEBUG]   [STDOUT] Done. Appended 2/2 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11-4.lys
+2025-11-11 18:08:57 [INFO] Process completed with exit code: 0
+2025-11-11 18:09:10 [INFO] Opened log folder: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:10:37 [INFO] ================================================================================
+2025-11-11 18:10:37 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:10:37.699534
+2025-11-11 18:10:37 [INFO] ================================================================================
+2025-11-11 18:10:37 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:10:37 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:10:37 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:10:37 [INFO]   Architecture: AMD64
+2025-11-11 18:10:37 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:10:37 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:10:37 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:10:37 [INFO]   Running as: Python script
+2025-11-11 18:10:37 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:10:37 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:10:37 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:10:37 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:10:37 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:10:37 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:10:37 [INFO]   NumPy: 2.3.4
+2025-11-11 18:10:37 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:10:37 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:10:37 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:10:37 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:10:37 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:10:37 [INFO] ================================================================================
+2025-11-11 18:10:37 [INFO] Starting Point Align GUI...
+2025-11-11 18:10:38 [INFO] Loaded 0 landmark presets
+2025-11-11 18:10:38 [INFO] GUI initialized successfully
+2025-11-11 18:10:50 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:10:50 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:10:50 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:10:50 [DEBUG] checked=False
+2025-11-11 18:10:50 [DEBUG] Number of image strips: 2
+2025-11-11 18:10:50 [DEBUG] Processing strip 1/2
+2025-11-11 18:10:50 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:50 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:50 [DEBUG] Processing strip 2/2
+2025-11-11 18:10:50 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:50 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:50 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:10:51 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 18:10:51 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:10:51 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:10:51 [DEBUG] checked=False
+2025-11-11 18:10:51 [DEBUG] Number of image strips: 2
+2025-11-11 18:10:51 [DEBUG] Processing strip 1/2
+2025-11-11 18:10:51 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 18:10:51 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:51 [DEBUG] Processing strip 2/2
+2025-11-11 18:10:51 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:51 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:51 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:10:53 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:10:53 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:10:53 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:10:53 [DEBUG] checked=False
+2025-11-11 18:10:53 [DEBUG] Number of image strips: 2
+2025-11-11 18:10:53 [DEBUG] Processing strip 1/2
+2025-11-11 18:10:53 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:53 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:53 [DEBUG] Processing strip 2/2
+2025-11-11 18:10:53 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:53 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:53 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:10:55 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 18:10:55 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:10:55 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:10:55 [DEBUG] checked=False
+2025-11-11 18:10:55 [DEBUG] Number of image strips: 2
+2025-11-11 18:10:55 [DEBUG] Processing strip 1/2
+2025-11-11 18:10:55 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 18:10:55 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:55 [DEBUG] Processing strip 2/2
+2025-11-11 18:10:55 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:55 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:55 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:10:56 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:10:56 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:10:56 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:10:56 [DEBUG] checked=False
+2025-11-11 18:10:56 [DEBUG] Number of image strips: 2
+2025-11-11 18:10:56 [DEBUG] Processing strip 1/2
+2025-11-11 18:10:56 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:56 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:56 [DEBUG] Processing strip 2/2
+2025-11-11 18:10:56 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:56 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:56 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:10:58 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 18:10:58 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:10:58 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:10:58 [DEBUG] checked=False
+2025-11-11 18:10:58 [DEBUG] Number of image strips: 2
+2025-11-11 18:10:58 [DEBUG] Processing strip 1/2
+2025-11-11 18:10:58 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 18:10:58 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:58 [DEBUG] Processing strip 2/2
+2025-11-11 18:10:58 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:10:58 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:10:58 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:11:00 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:11:00 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:11:00 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:11:00 [DEBUG] checked=False
+2025-11-11 18:11:00 [DEBUG] Number of image strips: 2
+2025-11-11 18:11:00 [DEBUG] Processing strip 1/2
+2025-11-11 18:11:00 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 18:11:00 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:11:00 [DEBUG] Processing strip 2/2
+2025-11-11 18:11:00 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 18:11:00 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:11:00 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:11:01 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 18:11:01 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:11:01 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:11:01 [DEBUG] checked=False
+2025-11-11 18:11:01 [DEBUG] Number of image strips: 2
+2025-11-11 18:11:01 [DEBUG] Processing strip 1/2
+2025-11-11 18:11:01 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:11:01 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:11:01 [DEBUG] Processing strip 2/2
+2025-11-11 18:11:01 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:11:01 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:11:01 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:12:19 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:12:19 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:12:19 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:12:19 [DEBUG] checked=False
+2025-11-11 18:12:19 [DEBUG] Number of image strips: 2
+2025-11-11 18:12:19 [DEBUG] Processing strip 1/2
+2025-11-11 18:12:19 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG] Processing strip 2/2
+2025-11-11 18:12:19 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:12:19 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 18:12:19 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:12:19 [DEBUG] State == Qt.Checked? False
+2025-11-11 18:12:19 [DEBUG] checked=False
+2025-11-11 18:12:19 [DEBUG] Number of image strips: 2
+2025-11-11 18:12:19 [DEBUG] Processing strip 1/2
+2025-11-11 18:12:19 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG] Processing strip 2/2
+2025-11-11 18:12:19 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 18:12:19 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:12:24 [INFO] ================================================================================
+2025-11-11 18:12:24 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:12:24.464685
+2025-11-11 18:12:24 [INFO] ================================================================================
+2025-11-11 18:12:24 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:12:24 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:12:24 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:12:24 [INFO]   Architecture: AMD64
+2025-11-11 18:12:24 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:12:24 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:12:24 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:12:24 [INFO]   Running as: Python script
+2025-11-11 18:12:24 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:12:24 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:12:24 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:12:24 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:12:24 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:12:24 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:12:24 [INFO]   NumPy: 2.3.4
+2025-11-11 18:12:24 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:12:24 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:12:24 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:12:24 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:12:24 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:12:24 [INFO] ================================================================================
+2025-11-11 18:12:24 [INFO] Starting Point Align GUI...
+2025-11-11 18:12:24 [INFO] Loaded 0 landmark presets
+2025-11-11 18:12:25 [INFO] GUI initialized successfully
+2025-11-11 18:12:32 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:12:32 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:13:29 [INFO] ================================================================================
+2025-11-11 18:13:29 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:13:29.150544
+2025-11-11 18:13:29 [INFO] ================================================================================
+2025-11-11 18:13:29 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:13:29 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:13:29 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:13:29 [INFO]   Architecture: AMD64
+2025-11-11 18:13:29 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:13:29 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:13:29 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:13:29 [INFO]   Running as: Python script
+2025-11-11 18:13:29 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:13:29 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:13:29 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:13:29 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:13:29 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:13:29 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:13:29 [INFO]   NumPy: 2.3.4
+2025-11-11 18:13:29 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:13:29 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:13:29 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:13:29 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:13:29 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:13:29 [INFO] ================================================================================
+2025-11-11 18:13:29 [INFO] Starting Point Align GUI...
+2025-11-11 18:13:29 [INFO] Loaded 0 landmark presets
+2025-11-11 18:13:30 [INFO] GUI initialized successfully
+2025-11-11 18:13:35 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:13:35 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:13:35 [DEBUG] checked=True (comparing 2 == 2)
+2025-11-11 18:13:35 [DEBUG] Number of image strips: 2
+2025-11-11 18:13:35 [DEBUG] Processing strip 1/2
+2025-11-11 18:13:35 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:13:35 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 18:13:35 [DEBUG] Processing strip 2/2
+2025-11-11 18:13:35 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:13:35 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 18:13:35 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:13:40 [INFO] Building command line arguments...
+2025-11-11 18:13:40 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG', 'C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11-5.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 18:13:40 [INFO] Emitting run request signal...
+2025-11-11 18:13:40 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_181340.log
+2025-11-11 18:13:40 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 18:13:40 [INFO] Starting subprocess:
+2025-11-11 18:13:40 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11-5.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:13:40 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 18:13:52 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-5.lys (RMS=0.150 µm)
+2025-11-11 18:14:06 [DEBUG]   [STDOUT] [OK] IMG_2025_07_25_48938.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-5.lys (RMS=0.089 µm)
+2025-11-11 18:14:06 [DEBUG]   [STDOUT] Done. Appended 2/2 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11-5.lys
+2025-11-11 18:14:06 [INFO] Process completed with exit code: 0
+2025-11-11 18:16:43 [INFO] ================================================================================
+2025-11-11 18:16:43 [INFO] PointAlign Debug Log - Session started at 2025-11-11 18:16:43.104351
+2025-11-11 18:16:43 [INFO] ================================================================================
+2025-11-11 18:16:43 [INFO] SYSTEM INFORMATION:
+2025-11-11 18:16:43 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 18:16:43 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 18:16:43 [INFO]   Architecture: AMD64
+2025-11-11 18:16:43 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 18:16:43 [INFO]   Python Version: 3.14.0 (tags/v3.14.0:ebf955d, Oct  7 2025, 10:15:03) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 18:16:43 [INFO]   Python Executable: C:\Python314\python.exe
+2025-11-11 18:16:43 [INFO]   Running as: Python script
+2025-11-11 18:16:43 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:16:43 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 18:16:43 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 18:16:43 [ERROR]   OpenCV (cv2): NOT FOUND - No module named 'cv2'
+2025-11-11 18:16:43 [INFO]   Qt Backend: PyQt6
+2025-11-11 18:16:43 [INFO]   PyQt6: 6.10.0
+2025-11-11 18:16:43 [INFO]   NumPy: 2.3.4
+2025-11-11 18:16:43 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 18:16:43 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 18:16:43 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:16:43 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 18:16:43 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 18:16:43 [INFO] ================================================================================
+2025-11-11 18:16:43 [INFO] Starting Point Align GUI...
+2025-11-11 18:16:43 [INFO] Loaded 0 landmark presets
+2025-11-11 18:16:43 [INFO] GUI initialized successfully
+2025-11-11 18:17:00 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 18:17:00 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 18:17:00 [DEBUG] checked=True (comparing 2 == 2)
+2025-11-11 18:17:00 [DEBUG] Number of image strips: 2
+2025-11-11 18:17:00 [DEBUG] Processing strip 1/2
+2025-11-11 18:17:00 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:17:00 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 18:17:00 [DEBUG] Processing strip 2/2
+2025-11-11 18:17:00 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 18:17:00 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 18:17:00 [DEBUG] _on_select_all_changed completed
+2025-11-11 18:17:02 [INFO] Building command line arguments...
+2025-11-11 18:17:02 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG', 'C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11-6.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 18:17:02 [INFO] Emitting run request signal...
+2025-11-11 18:17:02 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_181702.log
+2025-11-11 18:17:02 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 18:17:02 [INFO] Starting subprocess:
+2025-11-11 18:17:02 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11-6.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:17:02 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 18:17:06 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-6.lys (RMS=13.403 µm)
+2025-11-11 18:17:08 [DEBUG]   [STDOUT] [OK] IMG_2025_07_25_48938.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-6.lys (RMS=12.928 µm)
+2025-11-11 18:17:08 [DEBUG]   [STDOUT] Done. Appended 2/2 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11-6.lys
+2025-11-11 18:17:08 [INFO] Process completed with exit code: 0
+2025-11-11 18:17:23 [INFO] Building command line arguments...
+2025-11-11 18:17:23 [INFO] Command arguments: ['--files', 'C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG', 'C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG', '--lys-in', 'C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys', '--after', '(-50,60),(70,60),(-50,-60),(70,-60)', '--affine', '--combined-out', 'C:\\Users\\gehl2\\Desktop\\Aligned-2025-11-11-7.lys', '--auto-review', '--gds-file', 'C:\\Users\\gehl2\\Auto_align_program\\Test.GDS']
+2025-11-11 18:17:23 [INFO] Emitting run request signal...
+2025-11-11 18:17:23 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_181723.log
+2025-11-11 18:17:23 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 18:17:23 [INFO] Starting subprocess:
+2025-11-11 18:17:23 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\Aligned-2025-11-11-7.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 18:17:23 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 18:17:27 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-7.lys (RMS=22.286 µm)
+2025-11-11 18:17:29 [DEBUG]   [STDOUT] [OK] IMG_2025_07_25_48938.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11-7.lys (RMS=12.316 µm)
+2025-11-11 18:17:29 [DEBUG]   [STDOUT] Done. Appended 2/2 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11-7.lys
+2025-11-11 18:17:29 [INFO] Process completed with exit code: 0
+2025-11-11 19:18:02 [INFO] ================================================================================
+2025-11-11 19:18:02 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:18:02.743018
+2025-11-11 19:18:02 [INFO] ================================================================================
+2025-11-11 19:18:02 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:18:02 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:18:02 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:18:02 [INFO]   Architecture: AMD64
+2025-11-11 19:18:02 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:18:02 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:18:02 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:18:02 [INFO]   Running as: Python script
+2025-11-11 19:18:02 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:18:02 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:18:02 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:18:03 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:18:03 [INFO]   Qt Backend: PySide6
+2025-11-11 19:18:03 [INFO]   PySide6: 6.9.3
+2025-11-11 19:18:03 [INFO]   NumPy: 2.2.6
+2025-11-11 19:18:03 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:18:03 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:18:03 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:18:03 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:18:03 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:18:03 [INFO] ================================================================================
+2025-11-11 19:18:03 [INFO] Starting Point Align GUI...
+2025-11-11 19:18:03 [INFO] GUI initialized successfully
+2025-11-11 19:19:12 [INFO] ================================================================================
+2025-11-11 19:19:12 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:19:12.483789
+2025-11-11 19:19:12 [INFO] ================================================================================
+2025-11-11 19:19:12 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:19:12 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:19:12 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:19:12 [INFO]   Architecture: AMD64
+2025-11-11 19:19:12 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:19:12 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:19:12 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:19:12 [INFO]   Running as: Python script
+2025-11-11 19:19:12 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:19:12 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:19:12 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:19:12 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:19:12 [INFO]   Qt Backend: PySide6
+2025-11-11 19:19:12 [INFO]   PySide6: 6.9.3
+2025-11-11 19:19:12 [INFO]   NumPy: 2.2.6
+2025-11-11 19:19:12 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:19:12 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:19:12 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:19:12 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:19:12 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:19:12 [INFO] ================================================================================
+2025-11-11 19:19:12 [INFO] Starting Point Align GUI...
+2025-11-11 19:19:13 [INFO] GUI initialized successfully
+2025-11-11 19:21:27 [INFO] ================================================================================
+2025-11-11 19:21:27 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:21:27.294596
+2025-11-11 19:21:27 [INFO] ================================================================================
+2025-11-11 19:21:27 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:21:27 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:21:27 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:21:27 [INFO]   Architecture: AMD64
+2025-11-11 19:21:27 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:21:27 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:21:27 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:21:27 [INFO]   Running as: Python script
+2025-11-11 19:21:27 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:21:27 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:21:27 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:21:27 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:21:27 [INFO]   Qt Backend: PySide6
+2025-11-11 19:21:27 [INFO]   PySide6: 6.9.3
+2025-11-11 19:21:27 [INFO]   NumPy: 2.2.6
+2025-11-11 19:21:27 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:21:27 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:21:27 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:21:27 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:21:27 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:21:27 [INFO] ================================================================================
+2025-11-11 19:21:27 [INFO] Starting Point Align GUI...
+2025-11-11 19:21:28 [INFO] GUI initialized successfully
+2025-11-11 19:21:50 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 19:21:50 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 19:21:50 [DEBUG] checked=True (comparing 2 == 2)
+2025-11-11 19:21:50 [DEBUG] Number of image strips: 2
+2025-11-11 19:21:50 [DEBUG] Processing strip 1/2
+2025-11-11 19:21:50 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:21:50 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:21:50 [DEBUG] Processing strip 2/2
+2025-11-11 19:21:50 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:21:50 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:21:50 [DEBUG] _on_select_all_changed completed
+2025-11-11 19:21:52 [INFO] Batch run requested for 2 selected images
+2025-11-11 19:22:00 [INFO] Single align: C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG, preset=[Default], output=auto
+2025-11-11 19:22:00 [INFO] Emitting single run request
+2025-11-11 19:22:00 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_192200.log
+2025-11-11 19:22:00 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 19:22:00 [INFO] Starting subprocess:
+2025-11-11 19:22:00 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\IMG_2025_08_21_51204-aligned.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:22:00 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 19:22:01 [DEBUG]   [STDOUT] [FAIL] C:\Users\gehl2\Downloads\IMG_2025_08_21_51204.JPG: type object 'Qt' has no attribute 'ApplicationModal'
+2025-11-11 19:22:01 [DEBUG]   [STDOUT] Done. Appended 0/1 images into: C:\Users\gehl2\Desktop\IMG_2025_08_21_51204-aligned.lys
+2025-11-11 19:22:01 [INFO] Process completed with exit code: 1
+2025-11-11 19:23:15 [INFO] ================================================================================
+2025-11-11 19:23:15 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:23:15.690128
+2025-11-11 19:23:15 [INFO] ================================================================================
+2025-11-11 19:23:15 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:23:15 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:23:15 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:23:15 [INFO]   Architecture: AMD64
+2025-11-11 19:23:15 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:23:15 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:23:15 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:23:15 [INFO]   Running as: Python script
+2025-11-11 19:23:15 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:23:15 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:23:15 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:23:16 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:23:16 [INFO]   Qt Backend: PySide6
+2025-11-11 19:23:16 [INFO]   PySide6: 6.9.3
+2025-11-11 19:23:16 [INFO]   NumPy: 2.2.6
+2025-11-11 19:23:16 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:23:16 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:23:16 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:23:16 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:23:16 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:23:16 [INFO] ================================================================================
+2025-11-11 19:23:16 [INFO] Starting Point Align GUI...
+2025-11-11 19:23:16 [INFO] GUI initialized successfully
+2025-11-11 19:23:40 [INFO] Single align: C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG, preset=[Default], output=auto
+2025-11-11 19:23:40 [INFO] Emitting single run request
+2025-11-11 19:23:40 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_192340.log
+2025-11-11 19:23:40 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 19:23:40 [INFO] Starting subprocess:
+2025-11-11 19:23:40 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:\Users\gehl2\Desktop\IMG_2025_08_21_51204-aligned.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:23:40 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 19:25:42 [INFO] Process completed with exit code: 1
+2025-11-11 19:25:49 [INFO] ================================================================================
+2025-11-11 19:25:49 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:25:49.725413
+2025-11-11 19:25:49 [INFO] ================================================================================
+2025-11-11 19:25:49 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:25:49 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:25:49 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:25:49 [INFO]   Architecture: AMD64
+2025-11-11 19:25:49 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:25:49 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:25:49 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:25:49 [INFO]   Running as: Python script
+2025-11-11 19:25:49 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:25:49 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:25:49 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:25:50 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:25:50 [INFO]   Qt Backend: PySide6
+2025-11-11 19:25:50 [INFO]   PySide6: 6.9.3
+2025-11-11 19:25:50 [INFO]   NumPy: 2.2.6
+2025-11-11 19:25:50 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:25:50 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:25:50 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:25:50 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:25:50 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:25:50 [INFO] ================================================================================
+2025-11-11 19:25:50 [INFO] Starting Point Align GUI...
+2025-11-11 19:25:50 [INFO] GUI initialized successfully
+2025-11-11 19:26:14 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 19:26:14 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 19:26:14 [DEBUG] checked=True (comparing 2 == 2)
+2025-11-11 19:26:14 [DEBUG] Number of image strips: 2
+2025-11-11 19:26:14 [DEBUG] Processing strip 1/2
+2025-11-11 19:26:14 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 19:26:14 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:26:14 [DEBUG] Processing strip 2/2
+2025-11-11 19:26:14 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:26:14 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:26:14 [DEBUG] _on_select_all_changed completed
+2025-11-11 19:26:15 [INFO] Batch run requested for 2 selected images
+2025-11-11 19:26:19 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 19:26:19 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 19:26:19 [DEBUG] checked=False (comparing 0 == 2)
+2025-11-11 19:26:19 [DEBUG] Number of image strips: 2
+2025-11-11 19:26:19 [DEBUG] Processing strip 1/2
+2025-11-11 19:26:19 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:26:19 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 19:26:19 [DEBUG] Processing strip 2/2
+2025-11-11 19:26:19 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 19:26:19 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 19:26:19 [DEBUG] _on_select_all_changed completed
+2025-11-11 19:27:07 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 19:27:07 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 19:27:07 [DEBUG] checked=True (comparing 2 == 2)
+2025-11-11 19:27:07 [DEBUG] Number of image strips: 2
+2025-11-11 19:27:07 [DEBUG] Processing strip 1/2
+2025-11-11 19:27:07 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:27:07 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:27:07 [DEBUG] Processing strip 2/2
+2025-11-11 19:27:07 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:27:07 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:27:07 [DEBUG] _on_select_all_changed completed
+2025-11-11 19:27:08 [INFO] Batch run requested for 2 selected images
+2025-11-11 19:27:12 [INFO] Emitting batch run request for 2 images
+2025-11-11 19:27:12 [INFO] Run log file: C:\Users\gehl2\AppData\Local\Temp\PointAlign_run_20251111_192712.log
+2025-11-11 19:27:12 [DEBUG] Using Python command: ['py', '-3']
+2025-11-11 19:27:12 [INFO] Starting subprocess:
+2025-11-11 19:27:12 [INFO]   Command: py -3 -u C:\Users\gehl2\Auto_align_program\point_align_batch_runner_gui.py --files C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG C:/Users/gehl2/Downloads/IMG_2025_07_25_48938.JPG --lys-in C:\Users\gehl2\Auto_align_program\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-60) --affine --combined-out C:/Users/gehl2/Desktop/Aligned-2025-11-11.lys --auto-review --gds-file C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:27:12 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-11 19:27:23 [DEBUG]   [STDOUT] [OK] IMG_2025_08_21_51204.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11.lys (RMS=0.064 µm)
+2025-11-11 19:27:33 [DEBUG]   [STDOUT] [OK] IMG_2025_07_25_48938.JPG → C:\Users\gehl2\Desktop\Aligned-2025-11-11.lys (RMS=0.223 µm)
+2025-11-11 19:27:33 [DEBUG]   [STDOUT] Done. Appended 2/2 images into: C:\Users\gehl2\Desktop\Aligned-2025-11-11.lys
+2025-11-11 19:27:33 [INFO] Process completed with exit code: 0
+2025-11-11 19:29:49 [INFO] ================================================================================
+2025-11-11 19:29:49 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:29:49.398294
+2025-11-11 19:29:49 [INFO] ================================================================================
+2025-11-11 19:29:49 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:29:49 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:29:49 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:29:49 [INFO]   Architecture: AMD64
+2025-11-11 19:29:49 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:29:49 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:29:49 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:29:49 [INFO]   Running as: Python script
+2025-11-11 19:29:49 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:29:49 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:29:49 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:29:49 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:29:49 [INFO]   Qt Backend: PySide6
+2025-11-11 19:29:49 [INFO]   PySide6: 6.9.3
+2025-11-11 19:29:49 [INFO]   NumPy: 2.2.6
+2025-11-11 19:29:49 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:29:49 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:29:49 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:29:49 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:29:49 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:29:49 [INFO] ================================================================================
+2025-11-11 19:29:49 [INFO] Starting Point Align GUI...
+2025-11-11 19:29:50 [INFO] GUI initialized successfully
+2025-11-11 19:34:15 [INFO] ================================================================================
+2025-11-11 19:34:15 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:34:15.878840
+2025-11-11 19:34:15 [INFO] ================================================================================
+2025-11-11 19:34:15 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:34:15 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:34:16 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:34:16 [INFO]   Architecture: AMD64
+2025-11-11 19:34:16 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:34:16 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:34:16 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:34:16 [INFO]   Running as: Python script
+2025-11-11 19:34:16 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:34:16 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:34:16 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:34:16 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:34:16 [INFO]   Qt Backend: PySide6
+2025-11-11 19:34:16 [INFO]   PySide6: 6.9.3
+2025-11-11 19:34:16 [INFO]   NumPy: 2.2.6
+2025-11-11 19:34:16 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:34:16 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:34:16 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:34:16 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:34:16 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:34:16 [INFO] ================================================================================
+2025-11-11 19:34:16 [INFO] Starting Point Align GUI...
+2025-11-11 19:34:16 [INFO] GUI initialized successfully
+2025-11-11 19:37:51 [INFO] ================================================================================
+2025-11-11 19:37:51 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:37:51.788331
+2025-11-11 19:37:51 [INFO] ================================================================================
+2025-11-11 19:37:51 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:37:51 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:37:51 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:37:51 [INFO]   Architecture: AMD64
+2025-11-11 19:37:51 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:37:51 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:37:51 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:37:51 [INFO]   Running as: Python script
+2025-11-11 19:37:51 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:37:51 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:37:51 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:37:52 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:37:52 [INFO]   Qt Backend: PySide6
+2025-11-11 19:37:52 [INFO]   PySide6: 6.9.3
+2025-11-11 19:37:52 [INFO]   NumPy: 2.2.6
+2025-11-11 19:37:52 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:37:52 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:37:52 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:37:52 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:37:52 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:37:52 [INFO] ================================================================================
+2025-11-11 19:37:52 [INFO] Starting Point Align GUI...
+2025-11-11 19:37:52 [INFO] GUI initialized successfully
+2025-11-11 19:38:06 [INFO] Single align: C:/Users/gehl2/Downloads/IMG_2025_08_21_51204.JPG, preset=[Default], output=auto
+2025-11-11 19:38:31 [DEBUG] _on_select_all_changed called with state=2
+2025-11-11 19:38:31 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 19:38:31 [DEBUG] checked=True (comparing 2 == 2)
+2025-11-11 19:38:31 [DEBUG] Number of image strips: 2
+2025-11-11 19:38:31 [DEBUG] Processing strip 1/2
+2025-11-11 19:38:31 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:38:31 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:38:31 [DEBUG] Processing strip 2/2
+2025-11-11 19:38:31 [DEBUG]   Before: checkbox.isChecked() = False
+2025-11-11 19:38:31 [DEBUG]   After set_checked(True): checkbox.isChecked() = True
+2025-11-11 19:38:31 [DEBUG] _on_select_all_changed completed
+2025-11-11 19:38:31 [DEBUG] _on_select_all_changed called with state=0
+2025-11-11 19:38:31 [DEBUG] Qt.Checked value = CheckState.Checked
+2025-11-11 19:38:31 [DEBUG] checked=False (comparing 0 == 2)
+2025-11-11 19:38:31 [DEBUG] Number of image strips: 2
+2025-11-11 19:38:31 [DEBUG] Processing strip 1/2
+2025-11-11 19:38:31 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 19:38:31 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 19:38:31 [DEBUG] Processing strip 2/2
+2025-11-11 19:38:31 [DEBUG]   Before: checkbox.isChecked() = True
+2025-11-11 19:38:31 [DEBUG]   After set_checked(False): checkbox.isChecked() = False
+2025-11-11 19:38:31 [DEBUG] _on_select_all_changed completed
+2025-11-11 19:43:23 [INFO] ================================================================================
+2025-11-11 19:43:23 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:43:23.460726
+2025-11-11 19:43:23 [INFO] ================================================================================
+2025-11-11 19:43:23 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:43:23 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:43:23 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:43:23 [INFO]   Architecture: AMD64
+2025-11-11 19:43:23 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:43:23 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:43:23 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:43:23 [INFO]   Running as: Python script
+2025-11-11 19:43:23 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:43:23 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:43:23 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:43:23 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:43:23 [INFO]   Qt Backend: PySide6
+2025-11-11 19:43:23 [INFO]   PySide6: 6.9.3
+2025-11-11 19:43:23 [INFO]   NumPy: 2.2.6
+2025-11-11 19:43:23 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:43:23 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:43:23 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:43:23 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:43:23 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:43:23 [INFO] ================================================================================
+2025-11-11 19:43:23 [INFO] Starting Point Align GUI...
+2025-11-11 19:43:24 [INFO] GUI initialized successfully
+2025-11-11 19:47:26 [INFO] ================================================================================
+2025-11-11 19:47:26 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:47:26.151556
+2025-11-11 19:47:26 [INFO] ================================================================================
+2025-11-11 19:47:26 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:47:26 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:47:26 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:47:26 [INFO]   Architecture: AMD64
+2025-11-11 19:47:26 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:47:26 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:47:26 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:47:26 [INFO]   Running as: Python script
+2025-11-11 19:47:26 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:47:26 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:47:26 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:47:26 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:47:26 [INFO]   Qt Backend: PySide6
+2025-11-11 19:47:26 [INFO]   PySide6: 6.9.3
+2025-11-11 19:47:26 [INFO]   NumPy: 2.2.6
+2025-11-11 19:47:26 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:47:26 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:47:26 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:47:26 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:47:26 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:47:26 [INFO] ================================================================================
+2025-11-11 19:47:26 [INFO] Starting Point Align GUI...
+2025-11-11 19:47:27 [INFO] GUI initialized successfully
+2025-11-11 19:49:28 [INFO] ================================================================================
+2025-11-11 19:49:28 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:49:28.163976
+2025-11-11 19:49:28 [INFO] ================================================================================
+2025-11-11 19:49:28 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:49:28 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:49:28 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:49:28 [INFO]   Architecture: AMD64
+2025-11-11 19:49:28 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:49:28 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:49:28 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:49:28 [INFO]   Running as: Python script
+2025-11-11 19:49:28 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:49:28 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:49:28 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:49:28 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:49:28 [INFO]   Qt Backend: PySide6
+2025-11-11 19:49:28 [INFO]   PySide6: 6.9.3
+2025-11-11 19:49:28 [INFO]   NumPy: 2.2.6
+2025-11-11 19:49:28 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:49:28 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:49:28 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:49:28 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:49:28 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:49:28 [INFO] ================================================================================
+2025-11-11 19:49:28 [INFO] Starting Point Align GUI...
+2025-11-11 19:49:29 [INFO] GUI initialized successfully
+2025-11-11 19:53:00 [INFO] ================================================================================
+2025-11-11 19:53:00 [INFO] PointAlign Debug Log - Session started at 2025-11-11 19:53:00.875924
+2025-11-11 19:53:00 [INFO] ================================================================================
+2025-11-11 19:53:00 [INFO] SYSTEM INFORMATION:
+2025-11-11 19:53:00 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 19:53:01 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 19:53:01 [INFO]   Architecture: AMD64
+2025-11-11 19:53:01 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 19:53:01 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 19:53:01 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 19:53:01 [INFO]   Running as: Python script
+2025-11-11 19:53:01 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:53:01 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 19:53:01 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 19:53:01 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 19:53:01 [INFO]   Qt Backend: PySide6
+2025-11-11 19:53:01 [INFO]   PySide6: 6.9.3
+2025-11-11 19:53:01 [INFO]   NumPy: 2.2.6
+2025-11-11 19:53:01 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 19:53:01 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 19:53:01 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 19:53:01 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 19:53:01 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 19:53:01 [INFO] ================================================================================
+2025-11-11 19:53:01 [INFO] Starting Point Align GUI...
+2025-11-11 19:53:01 [INFO] GUI initialized successfully
+2025-11-11 20:25:44 [INFO] ================================================================================
+2025-11-11 20:25:44 [INFO] PointAlign Debug Log - Session started at 2025-11-11 20:25:44.125072
+2025-11-11 20:25:44 [INFO] ================================================================================
+2025-11-11 20:25:44 [INFO] SYSTEM INFORMATION:
+2025-11-11 20:25:44 [INFO]   OS: Windows 11 (10.0.26100)
+2025-11-11 20:25:44 [INFO]   Platform: Windows-11-10.0.26100-SP0
+2025-11-11 20:25:44 [INFO]   Architecture: AMD64
+2025-11-11 20:25:44 [INFO]   Processor: Intel64 Family 6 Model 158 Stepping 10, GenuineIntel
+2025-11-11 20:25:44 [INFO]   Python Version: 3.13.7 (tags/v3.13.7:bcee1c3, Aug 14 2025, 14:15:11) [MSC v.1944 64 bit (AMD64)]
+2025-11-11 20:25:44 [INFO]   Python Executable: C:\Users\gehl2\AppData\Local\Programs\Python\Python313\python.exe
+2025-11-11 20:25:44 [INFO]   Running as: Python script
+2025-11-11 20:25:44 [INFO]   Script directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 20:25:44 [INFO]   Working directory: C:\Users\gehl2\Auto_align_program
+2025-11-11 20:25:44 [INFO] 
+INSTALLED PACKAGES:
+2025-11-11 20:25:44 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-11 20:25:44 [INFO]   Qt Backend: PySide6
+2025-11-11 20:25:44 [INFO]   PySide6: 6.9.3
+2025-11-11 20:25:44 [INFO]   NumPy: 2.2.6
+2025-11-11 20:25:44 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-11 20:25:44 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\gehl2\Auto_align_program\Test_with_img.lys
+2025-11-11 20:25:44 [INFO]   ✓ Test.GDS: Found at C:\Users\gehl2\Auto_align_program\Test.GDS
+2025-11-11 20:25:44 [INFO]   ✓ icon.ico: Found at C:\Users\gehl2\Auto_align_program\icon.ico
+2025-11-11 20:25:44 [INFO]   ✓ console_runner.py: Found at C:\Users\gehl2\Auto_align_program\console_runner.py
+2025-11-11 20:25:44 [INFO] ================================================================================
+2025-11-11 20:25:44 [INFO] Starting Point Align GUI...
+2025-11-11 20:25:45 [INFO] GUI initialized successfully
