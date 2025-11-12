@@ -24,6 +24,58 @@ class ExternalRunner(QtCore.QThread):
         self.argv_list = argv_list
         self.script_rel = script_rel
 
+    def _run_inprocess(self, script_path: Path, log_path: Path, logger):
+        """Run the batch script in-process (for single-file frozen builds)."""
+        import runpy
+        import io
+        import contextlib
+
+        # Redirect stdout/stderr to capture output
+        output_buffer = io.StringIO()
+
+        # Backup original sys.argv and replace with our arguments
+        original_argv = sys.argv
+        sys.argv = [str(script_path)] + self.argv_list
+
+        pretty_cmd = f"python {script_path} " + " ".join(self.argv_list)
+        self.started_with_cmd.emit(pretty_cmd + "\n")
+        logger.log_process_start(sys.argv)
+
+        try:
+            with open(log_path, "w", encoding="utf-8", errors="replace") as lf:
+                # Capture stdout and stderr
+                with contextlib.redirect_stdout(output_buffer), contextlib.redirect_stderr(output_buffer):
+                    # Run the script as __main__
+                    runpy.run_path(str(script_path), run_name="__main__")
+
+                # Get all output
+                output = output_buffer.getvalue()
+
+                # Write to log and emit line by line
+                for line in output.splitlines(keepends=True):
+                    lf.write(line)
+                    self.line_ready.emit(line)
+                    logger.log_process_output(line.rstrip())
+
+            logger.info("In-process execution completed successfully")
+            self.finished_with_code.emit(0)
+
+        except SystemExit as e:
+            # Script called sys.exit()
+            exit_code = e.code if isinstance(e.code, int) else (1 if e.code else 0)
+            logger.info(f"Script exited with code: {exit_code}")
+            self.finished_with_code.emit(exit_code)
+
+        except Exception as e:
+            error_msg = f"[ERROR] In-process execution failed: {e}\n"
+            logger.log_exception(e, "in-process execution")
+            self.line_ready.emit(error_msg)
+            self.finished_with_code.emit(1)
+
+        finally:
+            # Restore original sys.argv
+            sys.argv = original_argv
+
     def run(self):
         logger = get_logger()
 
@@ -44,17 +96,10 @@ class ExternalRunner(QtCore.QThread):
 
         # Use bundled Python if frozen (PyInstaller), otherwise use system Python
         if getattr(sys, 'frozen', False):
-            # Running from PyInstaller bundle - use console_runner.exe
-            # sys.executable would point to the GUI app, not a Python interpreter
-            console_runner = Path(sys.executable).parent / "console_runner.exe"
-            if not console_runner.exists():
-                error_msg = f"[ERROR] Console runner not found at {console_runner}. Rebuild with updated spec.\n"
-                logger.error(error_msg)
-                self.line_ready.emit(error_msg)
-                self.finished_with_code.emit(1)
-                return
-            cmd = [str(console_runner), str(script_path), *self.argv_list]
-            logger.debug(f"Using console runner: {console_runner}")
+            # Running from PyInstaller bundle - run in-process using runpy
+            # We cannot use subprocess with console=False builds
+            self._run_inprocess(script_path, log_path, logger)
+            return
         else:
             # Running from source - prefer system Python
             cmd = None

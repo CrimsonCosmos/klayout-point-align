@@ -10,12 +10,14 @@ try:
     from PySide6 import QtCore, QtGui, QtWidgets  # type: ignore
     USING_PYSIDE6 = True
     USING_PYQT6 = False
+    QT_BACKEND = "PySide6"
     Signal = QtCore.Signal
     Slot = QtCore.Slot
 except ModuleNotFoundError:
     from PyQt6 import QtCore, QtGui, QtWidgets  # type: ignore
     USING_PYSIDE6 = False
     USING_PYQT6 = True
+    QT_BACKEND = "PyQt6"
 
     # ---- Signals/Slots ----
     try:
@@ -211,6 +213,30 @@ except ModuleNotFoundError:
         _ASA.AdjustIgnored = getattr(_ASA, 'AdjustIgnored', _ASA.SizeAdjustPolicy.AdjustIgnored)
         _ASA.AdjustToContents = getattr(_ASA, 'AdjustToContents', _ASA.SizeAdjustPolicy.AdjustToContents)
         _ASA.AdjustToContentsOnFirstShow = getattr(_ASA, 'AdjustToContentsOnFirstShow', _ASA.SizeAdjustPolicy.AdjustToContentsOnFirstShow)
+    except Exception:
+        pass
+
+    # ---- Qt ScrollBarPolicy compatibility ----
+    try:
+        _Qt = QtCore.Qt
+        if not hasattr(_Qt, 'ScrollBarAlwaysOff'):
+            _Qt.ScrollBarAlwaysOff = _Qt.ScrollBarPolicy.ScrollBarAlwaysOff
+        if not hasattr(_Qt, 'ScrollBarAlwaysOn'):
+            _Qt.ScrollBarAlwaysOn = _Qt.ScrollBarPolicy.ScrollBarAlwaysOn
+        if not hasattr(_Qt, 'ScrollBarAsNeeded'):
+            _Qt.ScrollBarAsNeeded = _Qt.ScrollBarPolicy.ScrollBarAsNeeded
+    except Exception:
+        pass
+
+    # ---- Qt CheckState compatibility ----
+    try:
+        _Qt = QtCore.Qt
+        if not hasattr(_Qt, 'Checked'):
+            _Qt.Checked = _Qt.CheckState.Checked
+        if not hasattr(_Qt, 'Unchecked'):
+            _Qt.Unchecked = _Qt.CheckState.Unchecked
+        if not hasattr(_Qt, 'PartiallyChecked'):
+            _Qt.PartiallyChecked = _Qt.CheckState.PartiallyChecked
     except Exception:
         pass
 

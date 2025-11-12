@@ -10,6 +10,7 @@ import json
 
 from qt_compat import QtCore, QtGui, QtWidgets
 from diagnostic_logger import get_logger
+from landmark_presets import LandmarkPresetManager
 
 # ---- Constants mirrored from the legacy main ----
 APP_TITLE = "Point Align v1.1"
@@ -32,14 +33,17 @@ def resource_path(rel_path: str) -> Path:
 
 
 class ImageStripWidget(QtWidgets.QWidget):
-    """Custom widget representing a single image with checkbox, thumbnail, name, and align button."""
+    """Custom widget representing a single image with full alignment controls."""
 
-    alignRequested = QtCore.Signal(str)  # emits image path when Align clicked
+    alignRequested = QtCore.Signal(str, str, str)  # emits (image_path, landmark_preset, output_file)
     checkStateChanged = QtCore.Signal(str, bool)  # emits (path, checked)
+    coordinatesChanged = QtCore.Signal(str, str)  # emits (path, coordinates)
 
-    def __init__(self, image_path: str, parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(self, image_path: str, available_presets: list, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
         self.image_path = image_path
+        self.available_presets = available_presets
+        self.selected_coordinates = ""  # Will store the 4 clicked points
         self._build_ui()
 
     def _build_ui(self):
@@ -49,11 +53,14 @@ class ImageStripWidget(QtWidgets.QWidget):
 
         # Checkbox
         self.checkbox = QtWidgets.QCheckBox()
-        self.checkbox.setToolTip("Select this image for bulk operations")
+        self.checkbox.setToolTip("Select this image for batch operations")
         self.checkbox.stateChanged.connect(self._on_check_changed)
         layout.addWidget(self.checkbox)
 
-        # Thumbnail
+        # 1. Select Image (display only - already selected)
+        image_section = QtWidgets.QVBoxLayout()
+        image_section.setSpacing(2)
+
         thumbnail_label = QtWidgets.QLabel()
         thumbnail = self._create_thumbnail(self.image_path, 48)
         if thumbnail:
@@ -62,19 +69,74 @@ class ImageStripWidget(QtWidgets.QWidget):
             thumbnail_label.setText("[No preview]")
         thumbnail_label.setFixedSize(48, 48)
         thumbnail_label.setAlignment(QtCore.Qt.AlignCenter)
-        layout.addWidget(thumbnail_label)
+        image_section.addWidget(thumbnail_label)
 
-        # Image name
         name_label = QtWidgets.QLabel(Path(self.image_path).name)
         name_label.setToolTip(self.image_path)
-        layout.addWidget(name_label, 1)
+        name_label.setMaximumWidth(150)
+        name_label.setWordWrap(True)
+        image_section.addWidget(name_label)
+        layout.addLayout(image_section)
 
-        # Align button
-        self.align_btn = QtWidgets.QPushButton("Align")
-        self.align_btn.setToolTip("Align this image")
-        self.align_btn.setMaximumWidth(80)
-        self.align_btn.clicked.connect(self._on_align_clicked)
-        layout.addWidget(self.align_btn)
+        # 2. Selected Coordinates
+        coord_section = QtWidgets.QVBoxLayout()
+        coord_section.setSpacing(2)
+        coord_label = QtWidgets.QLabel("Coordinates:")
+        coord_label.setStyleSheet("font-weight: bold;")
+        coord_section.addWidget(coord_label)
+
+        self.coord_display = QtWidgets.QLineEdit()
+        self.coord_display.setReadOnly(True)
+        self.coord_display.setPlaceholderText("Not yet selected")
+        self.coord_display.setMinimumWidth(180)
+        self.coord_display.setToolTip("The 4 fiducial points clicked on the image")
+        coord_section.addWidget(self.coord_display)
+
+        btn_select_coords = QtWidgets.QPushButton("Pick Points")
+        btn_select_coords.setToolTip("Click to select 4 fiducial points on the image")
+        btn_select_coords.clicked.connect(self._on_pick_points)
+        coord_section.addWidget(btn_select_coords)
+        layout.addLayout(coord_section)
+
+        # 3. Select GDS Landmarks dropdown
+        landmark_section = QtWidgets.QVBoxLayout()
+        landmark_section.setSpacing(2)
+        landmark_label = QtWidgets.QLabel("GDS Landmarks:")
+        landmark_label.setStyleSheet("font-weight: bold;")
+        landmark_section.addWidget(landmark_label)
+
+        self.landmark_combo = QtWidgets.QComboBox()
+        self.landmark_combo.addItems(self.available_presets)
+        self.landmark_combo.setCurrentText("[Default]")
+        self.landmark_combo.setToolTip("Select which GDS landmark preset to use")
+        self.landmark_combo.setMinimumWidth(120)
+        landmark_section.addWidget(self.landmark_combo)
+        layout.addLayout(landmark_section)
+
+        # 4. Select Output File
+        output_section = QtWidgets.QVBoxLayout()
+        output_section.setSpacing(2)
+        output_label = QtWidgets.QLabel("Output:")
+        output_label.setStyleSheet("font-weight: bold;")
+        output_section.addWidget(output_label)
+
+        self.output_field = QtWidgets.QLineEdit()
+        self.output_field.setPlaceholderText("Auto-generated")
+        self.output_field.setMinimumWidth(150)
+        self.output_field.setToolTip("Leave empty for auto-generated filename")
+        output_section.addWidget(self.output_field)
+
+        btn_browse_output = QtWidgets.QPushButton("Browse...")
+        btn_browse_output.clicked.connect(self._on_browse_output)
+        output_section.addWidget(btn_browse_output)
+        layout.addLayout(output_section)
+
+        # 5. Run button
+        self.run_btn = QtWidgets.QPushButton("Run")
+        self.run_btn.setToolTip("Align this image now")
+        self.run_btn.setMinimumWidth(80)
+        self.run_btn.clicked.connect(self._on_run_clicked)
+        layout.addWidget(self.run_btn)
 
     def _create_thumbnail(self, img_path: str, size: int = 48) -> Optional[QtGui.QPixmap]:
         """Create a thumbnail pixmap from an image file."""
@@ -87,17 +149,226 @@ class ImageStripWidget(QtWidgets.QWidget):
         except Exception:
             return None
 
-    def _on_align_clicked(self):
-        self.alignRequested.emit(self.image_path)
+    def _on_pick_points(self):
+        """Launch point picker for this image."""
+        # TODO: This will launch the point picker UI
+        # For now, just show a placeholder dialog
+        from qt_compat import QtWidgets
+        QtWidgets.QMessageBox.information(self, "Pick Points",
+            "Point picker will launch here.\nYou'll click 4 fiducial points on the image.")
+
+    def _on_browse_output(self):
+        """Browse for output file."""
+        from qt_compat import QtWidgets
+        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
+            self, "Select Output LYS File", "", "LYS Files (*.lys);;All Files (*.*)"
+        )
+        if filename:
+            self.output_field.setText(filename)
+
+    def _on_run_clicked(self):
+        """Emit signal to run alignment for this image."""
+        landmark_preset = self.landmark_combo.currentText()
+        output_file = self.output_field.text().strip() or "auto"
+        self.alignRequested.emit(self.image_path, landmark_preset, output_file)
 
     def _on_check_changed(self, state):
-        self.checkStateChanged.emit(self.image_path, state == QtCore.Qt.Checked)
+        checked_value = QtCore.Qt.Checked.value if hasattr(QtCore.Qt.Checked, 'value') else QtCore.Qt.Checked
+        checked = (state == checked_value)
+        self.checkStateChanged.emit(self.image_path, checked)
 
     def is_checked(self) -> bool:
         return self.checkbox.isChecked()
 
     def set_checked(self, checked: bool):
         self.checkbox.setChecked(checked)
+
+    def set_coordinates(self, coords: str):
+        """Set the selected coordinates display."""
+        self.selected_coordinates = coords
+        self.coord_display.setText(coords)
+
+    def get_landmark_preset(self) -> str:
+        """Get the selected landmark preset name."""
+        return self.landmark_combo.currentText()
+
+    def get_output_file(self) -> str:
+        """Get the output file path (or empty for auto-generated)."""
+        return self.output_field.text().strip()
+
+    def update_presets(self, presets: list):
+        """Update the available landmark presets in the dropdown."""
+        current = self.landmark_combo.currentText()
+        self.landmark_combo.clear()
+        self.landmark_combo.addItems(presets)
+        if current in presets:
+            self.landmark_combo.setCurrentText(current)
+
+
+class PresetManagerWidget(QtWidgets.QGroupBox):
+    """Widget for managing landmark presets at the bottom of the UI."""
+
+    presetsChanged = QtCore.Signal()  # Emitted when presets are added/deleted/renamed
+
+    def __init__(self, preset_manager: LandmarkPresetManager, parent: Optional[QtWidgets.QWidget] = None):
+        super().__init__("Landmark Preset Manager", parent)
+        self.preset_manager = preset_manager
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Instructions
+        info_label = QtWidgets.QLabel(
+            "Manage GDS landmark coordinate presets. The [Default] preset uses: (-50,60),(70,60),(-50,-60),(70,-60)"
+        )
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # Preset list and controls
+        controls_layout = QtWidgets.QHBoxLayout()
+
+        # List of presets
+        list_section = QtWidgets.QVBoxLayout()
+        list_section.addWidget(QtWidgets.QLabel("Available Presets:"))
+
+        self.preset_list = QtWidgets.QListWidget()
+        self.preset_list.setMaximumHeight(120)
+        self._refresh_preset_list()
+        list_section.addWidget(self.preset_list)
+        controls_layout.addLayout(list_section, 2)
+
+        # Buttons
+        button_section = QtWidgets.QVBoxLayout()
+
+        self.btn_add = QtWidgets.QPushButton("Add New...")
+        self.btn_add.clicked.connect(self._on_add_preset)
+        button_section.addWidget(self.btn_add)
+
+        self.btn_edit = QtWidgets.QPushButton("Edit...")
+        self.btn_edit.clicked.connect(self._on_edit_preset)
+        button_section.addWidget(self.btn_edit)
+
+        self.btn_rename = QtWidgets.QPushButton("Rename...")
+        self.btn_rename.clicked.connect(self._on_rename_preset)
+        button_section.addWidget(self.btn_rename)
+
+        self.btn_delete = QtWidgets.QPushButton("Delete")
+        self.btn_delete.clicked.connect(self._on_delete_preset)
+        button_section.addWidget(self.btn_delete)
+
+        button_section.addStretch()
+        controls_layout.addLayout(button_section, 1)
+
+        layout.addLayout(controls_layout)
+
+    def _refresh_preset_list(self):
+        """Refresh the preset list display."""
+        self.preset_list.clear()
+        for name in self.preset_manager.get_preset_names():
+            coords = self.preset_manager.get_coordinates(name)
+            item_text = f"{name}: {coords}"
+            self.preset_list.addItem(item_text)
+
+    def _on_add_preset(self):
+        """Add a new preset."""
+        name, ok = QtWidgets.QInputDialog.getText(
+            self, "Add Preset", "Enter preset name:"
+        )
+        if not ok or not name.strip():
+            return
+
+        coords, ok = QtWidgets.QInputDialog.getText(
+            self, "Add Preset",
+            f"Enter coordinates for '{name}':\n(Format: (x1,y1),(x2,y2),(x3,y3),(x4,y4))",
+            text="(-50,60),(70,60),(-50,-60),(70,-60)"
+        )
+        if not ok or not coords.strip():
+            return
+
+        if self.preset_manager.add_preset(name.strip(), coords.strip()):
+            self._refresh_preset_list()
+            self.presetsChanged.emit()
+            QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' added!")
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "Could not add preset. Name may be invalid or already exists.")
+
+    def _on_edit_preset(self):
+        """Edit selected preset's coordinates."""
+        current_item = self.preset_list.currentItem()
+        if not current_item:
+            QtWidgets.QMessageBox.information(self, "Edit Preset", "Please select a preset to edit.")
+            return
+
+        # Parse name from "Name: coords" format
+        item_text = current_item.text()
+        name = item_text.split(":")[0].strip()
+
+        if name == LandmarkPresetManager.DEFAULT_PRESET_NAME:
+            QtWidgets.QMessageBox.warning(self, "Cannot Edit", "The default preset cannot be modified.")
+            return
+
+        current_coords = self.preset_manager.get_coordinates(name)
+        coords, ok = QtWidgets.QInputDialog.getText(
+            self, "Edit Preset",
+            f"Edit coordinates for '{name}':",
+            text=current_coords
+        )
+        if ok and coords.strip():
+            if self.preset_manager.add_preset(name, coords.strip()):
+                self._refresh_preset_list()
+                self.presetsChanged.emit()
+                QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' updated!")
+
+    def _on_rename_preset(self):
+        """Rename selected preset."""
+        current_item = self.preset_list.currentItem()
+        if not current_item:
+            QtWidgets.QMessageBox.information(self, "Rename Preset", "Please select a preset to rename.")
+            return
+
+        item_text = current_item.text()
+        old_name = item_text.split(":")[0].strip()
+
+        if old_name == LandmarkPresetManager.DEFAULT_PRESET_NAME:
+            QtWidgets.QMessageBox.warning(self, "Cannot Rename", "The default preset cannot be renamed.")
+            return
+
+        new_name, ok = QtWidgets.QInputDialog.getText(
+            self, "Rename Preset", f"Rename '{old_name}' to:", text=old_name
+        )
+        if ok and new_name.strip():
+            if self.preset_manager.rename_preset(old_name, new_name.strip()):
+                self._refresh_preset_list()
+                self.presetsChanged.emit()
+                QtWidgets.QMessageBox.information(self, "Success", f"Preset renamed to '{new_name}'!")
+            else:
+                QtWidgets.QMessageBox.warning(self, "Error", "Could not rename preset. Name may already exist.")
+
+    def _on_delete_preset(self):
+        """Delete selected preset."""
+        current_item = self.preset_list.currentItem()
+        if not current_item:
+            QtWidgets.QMessageBox.information(self, "Delete Preset", "Please select a preset to delete.")
+            return
+
+        item_text = current_item.text()
+        name = item_text.split(":")[0].strip()
+
+        if name == LandmarkPresetManager.DEFAULT_PRESET_NAME:
+            QtWidgets.QMessageBox.warning(self, "Cannot Delete", "The default preset cannot be deleted.")
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete preset '{name}'?",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+        )
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+            if self.preset_manager.delete_preset(name):
+                self._refresh_preset_list()
+                self.presetsChanged.emit()
+                QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' deleted!")
 
 
 class AlignTab(QtWidgets.QWidget):
@@ -109,9 +380,12 @@ class AlignTab(QtWidgets.QWidget):
         self._prefs_file = Path(__file__).parent.parent / "align_tab_prefs.json"
         self._landmarks_file = Path(__file__).parent.parent / LANDMARKS_PREFS_NAME
         self.image_strips: Dict[str, ImageStripWidget] = {}  # path -> widget
+
+        # Initialize preset manager
+        self.preset_manager = LandmarkPresetManager(self._landmarks_file)
+
         self._build_ui()
         self._load_preferences()
-        self._load_landmark_presets()
 
     # ---------------- UI ----------------
     def _build_ui(self):
@@ -137,6 +411,7 @@ class AlignTab(QtWidgets.QWidget):
 
         self.chk_select_all = QtWidgets.QCheckBox("Select All")
         self.chk_select_all.setToolTip("Select/deselect all images for bulk operations")
+        self.chk_select_all.setEnabled(False)  # Disabled until images are added
         self.chk_select_all.stateChanged.connect(self._on_select_all_changed)
         row.addWidget(self.chk_select_all)
 
@@ -205,23 +480,13 @@ class AlignTab(QtWidgets.QWidget):
         grid.addWidget(grp_run, 2, 0, 1, 2)
         g3 = QtWidgets.QVBoxLayout(grp_run)
 
-        # Run button and verbose debug checkbox
+        # Run button
         run_row = QtWidgets.QHBoxLayout()
         self.btn_run = QtWidgets.QPushButton("Run")
         self.btn_run.setToolTip("Start the alignment process (Ctrl+Enter)")
         self.btn_run.setShortcut("Ctrl+Return")
         self.btn_run.clicked.connect(self._emit_run)
         run_row.addWidget(self.btn_run)
-
-        self.chk_verbose = QtWidgets.QCheckBox("Verbose Debug Mode")
-        self.chk_verbose.setToolTip("Enable detailed diagnostic logging to help troubleshoot issues.\nLog file saved to: PointAlign_debug.log")
-        self.chk_verbose.toggled.connect(self._on_verbose_toggled)
-        run_row.addWidget(self.chk_verbose)
-
-        self.btn_open_log = QtWidgets.QPushButton("Open Log Folder")
-        self.btn_open_log.setToolTip("Open the folder containing the debug log file")
-        self.btn_open_log.clicked.connect(self._open_log_folder)
-        run_row.addWidget(self.btn_open_log)
 
         run_row.addStretch(1)
 
@@ -404,11 +669,11 @@ class AlignTab(QtWidgets.QWidget):
         else:
             return {'symbol': '✗ Poor', 'color': QtGui.QColor('#CC0000')}  # Red
 
-    def _on_verbose_toggled(self, checked: bool):
-        """Handle verbose debug mode toggle."""
+    def set_verbose_mode(self, enabled: bool):
+        """Enable or disable verbose debug mode."""
         logger = get_logger()
-        logger.set_verbose(checked)
-        if checked:
+        logger.set_verbose(enabled)
+        if enabled:
             self.appendLog(f"\n[Verbose debug mode enabled - logging to {logger.get_log_path()}]\n")
         else:
             self.appendLog("\n[Verbose debug mode disabled]\n")
@@ -480,6 +745,10 @@ class AlignTab(QtWidgets.QWidget):
                 self.image_layout.insertWidget(self.image_layout.count() - 1, strip)
                 self.image_strips[p] = strip
 
+        # Enable select-all checkbox if we have images
+        if self.image_strips:
+            self.chk_select_all.setEnabled(True)
+
     def clear_list(self, *_):
         # Remove all image strips
         for strip in list(self.image_strips.values()):
@@ -487,6 +756,7 @@ class AlignTab(QtWidgets.QWidget):
             strip.deleteLater()
         self.image_strips.clear()
         self.chk_select_all.setChecked(False)
+        self.chk_select_all.setEnabled(False)  # Disable when no images
 
     def choose_output_folder(self):
         # Default to parent folder of last .lys if available
@@ -532,9 +802,31 @@ class AlignTab(QtWidgets.QWidget):
 
     def _on_select_all_changed(self, state):
         """Handle select all checkbox state change."""
-        checked = (state == QtCore.Qt.Checked)
-        for strip in self.image_strips.values():
+        from diagnostic_logger import get_logger
+        logger = get_logger()
+
+        logger.debug(f"_on_select_all_changed called with state={state}")
+        logger.debug(f"Qt.Checked value = {QtCore.Qt.Checked}")
+        # Compare integer values for Qt6 compatibility
+        # state is an int, Qt.Checked is an enum with a .value property
+        checked_value = QtCore.Qt.Checked.value if hasattr(QtCore.Qt.Checked, 'value') else QtCore.Qt.Checked
+        checked = (state == checked_value)
+        logger.debug(f"checked={checked} (comparing {state} == {checked_value})")
+        logger.debug(f"Number of image strips: {len(self.image_strips)}")
+
+        # Update all strip checkboxes
+        # We need to temporarily disconnect their signals to prevent feedback loop
+        for i, strip in enumerate(self.image_strips.values()):
+            logger.debug(f"Processing strip {i+1}/{len(self.image_strips)}")
+            logger.debug(f"  Before: checkbox.isChecked() = {strip.checkbox.isChecked()}")
+            # Disconnect signal temporarily
+            strip.checkStateChanged.disconnect(self._on_strip_check_changed)
             strip.set_checked(checked)
+            logger.debug(f"  After set_checked({checked}): checkbox.isChecked() = {strip.checkbox.isChecked()}")
+            # Reconnect signal
+            strip.checkStateChanged.connect(self._on_strip_check_changed)
+
+        logger.debug(f"_on_select_all_changed completed")
 
     def _on_strip_check_changed(self, path: str, checked: bool):
         """Handle individual strip checkbox change."""

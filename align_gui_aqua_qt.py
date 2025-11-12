@@ -292,6 +292,11 @@ class MainWin(QtWidgets.QMainWindow):
         self.theme_action.setCheckable(True)
         self.theme_action.triggered.connect(self._toggle_theme)
 
+        self.verbose_action = view_menu.addAction("Verbose Debug Mode")
+        self.verbose_action.setCheckable(True)
+        self.verbose_action.setChecked(False)
+        self.verbose_action.triggered.connect(self._toggle_verbose)
+
         central = QtWidgets.QWidget()
         self.setCentralWidget(central)
         root = QtWidgets.QVBoxLayout(central)
@@ -339,6 +344,10 @@ class MainWin(QtWidgets.QMainWindow):
         self._dark_mode = checked
         self._apply_theme()
         self._save_preferences()
+
+    def _toggle_verbose(self, checked: bool):
+        """Toggle verbose debug mode."""
+        self.align_tab.set_verbose_mode(checked)
 
     def _apply_theme(self):
         app = QtWidgets.QApplication.instance()
