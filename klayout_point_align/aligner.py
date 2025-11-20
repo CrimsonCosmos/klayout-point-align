@@ -40,7 +40,14 @@ def align_markers(before_ctr_px: Sequence[Tuple[float, float]],
 
     if lys_in and lys_out and image_file:
         px_tl_tr_br_bl = [before_ctr_px[0], before_ctr_px[1], before_ctr_px[3], before_ctr_px[2]]
-        update_klayout_session(lys_in, lys_out, image_file, H, px_tl_tr_br_bl, gds_file=gds_file)
+        update_klayout_session(
+            lys_in, lys_out, image_file, H, px_tl_tr_br_bl,
+            gds_file=gds_file,
+            picked_points_px=list(before_ctr_px),
+            target_points_um=list(cfg.after_pts_um),
+            rms_error_um=err,
+            affine_only=cfg.affine_only
+        )
     return H, err
 
 def run_point_alignment(image_path: str,

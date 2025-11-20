@@ -60,6 +60,7 @@ class _ImagePickerWidget:
         self.points: List[Tuple[float, float]] = []  # centered coords (+y up)
         self.saved = False
         self._panning_with_space = False
+        self._event_loop = None  # Will be set when run() is called
 
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
@@ -234,11 +235,11 @@ class _ImagePickerWidget:
                 self._update_status(f"Need {self.max_points} points; have {len(self.points)}.")
                 return
             self.saved = True
-            self.app.quit()
+            self.win.close()
         elif k in (QtCore.Qt.Key_Q, QtCore.Qt.Key_Escape):
             self.points.clear()
             self.saved = False
-            self.app.quit()
+            self.win.close()
         elif k == QtCore.Qt.Key_F:
             self._fit_to_view()
         elif k == QtCore.Qt.Key_R:
@@ -260,11 +261,20 @@ class _ImagePickerWidget:
         else:
             self.saved = False
         event.accept()
+        # Quit the event loop if it exists
+        if self._event_loop is not None:
+            self._event_loop.quit()
 
     def run(self) -> List[Tuple[float, float]]:
+        # Make the window modal and use exec() to run a local event loop
+        # This prevents closing the main application when picker closes
+        self.win.setWindowModality(self._QtCore.Qt.ApplicationModal)
         self.win.show()
-        app_exec = getattr(self.app, "exec", None) or getattr(self.app, "exec_", None)
-        app_exec()
+
+        # Create a local event loop for this window
+        self._event_loop = self._QtCore.QEventLoop()
+        self._event_loop.exec()
+
         return list(self.points) if self.saved else []
 
 

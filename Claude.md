@@ -14,10 +14,16 @@
 - Windows-only, standalone executables (no Python required for end users)
 
 **Current State (as of 2025-11-11)**
-- **Status**: ✅ Production-ready, fully functional
-- **Version**: 1.1.0 (GUI), 1.0.0 (executable metadata)
-- **Last Build**: Successful, both executables working
+- **Status**: ⚠️ UI Redesign in Progress - See `UI_REDESIGN_HANDOFF.md`
+- **Main Branch**: ✅ Working version (v1.1.0 with bug fixes)
+- **WIP Branch** (`ui-redesign-wip`): 🟡 Major UI redesign (incomplete)
+- **Version**: 1.1.0 (main), 1.2.0 (wip branch)
 - **Platform**: Windows 10/11 (64-bit), Python 3.13.7
+
+**⚠️ IMPORTANT: Active Development**
+There is a major UI redesign in progress on branch `ui-redesign-wip`.
+- To use WORKING code: `git checkout main`
+- To continue redesign: `git checkout ui-redesign-wip` and read `UI_REDESIGN_HANDOFF.md`
 
 **Key Files to Know**
 - `dist/PointAlign.exe` (98 MB) - Main GUI application

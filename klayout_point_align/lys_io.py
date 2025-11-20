@@ -1,9 +1,10 @@
 # klayout_point_align/lys_io.py
 from __future__ import annotations
 from pathlib import Path
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, Optional
 import xml.etree.ElementTree as ET
 import numpy as np
+from datetime import datetime
 
 _Z_COUNTER = 0
 
@@ -47,10 +48,15 @@ def update_klayout_session(lys_in: str, lys_out: str,
                            image_file: str,
                            H_um_from_px: np.ndarray,
                            px_tl_tr_br_bl: Sequence[Tuple[float, float]],
-                           gds_file: str | None = None) -> None:
+                           gds_file: str | None = None,
+                           picked_points_px: Optional[Sequence[Tuple[float, float]]] = None,
+                           target_points_um: Optional[Sequence[Tuple[float, float]]] = None,
+                           rms_error_um: Optional[float] = None,
+                           affine_only: Optional[bool] = None) -> None:
     """
     Load a .lys file, ensure <annotations> exists, append an 'img::Object'.
     If gds_file is provided, also update <layout>/<file-path> and <layout>/<name>.
+    Optionally adds alignment metadata as a custom XML element.
     """
     xml_text = Path(lys_in).read_text(encoding="utf-8")
     root = ET.fromstring(xml_text)
@@ -96,4 +102,72 @@ def update_klayout_session(lys_in: str, lys_out: str,
     val = ET.SubElement(ann, "value")
     val.text = build_klayout_img_value(H_um_from_px, Path(image_file).as_posix(), px_tl_tr_br_bl)
 
+    # Add custom metadata element if alignment data is provided
+    if picked_points_px is not None or target_points_um is not None or rms_error_um is not None:
+        metadata = ET.SubElement(ann, "alignment_metadata")
+
+        # Timestamp
+        ET.SubElement(metadata, "timestamp").text = datetime.now().isoformat()
+
+        # Original picked points (centered pixel coordinates)
+        if picked_points_px is not None:
+            picked_elem = ET.SubElement(metadata, "picked_points_px_centered")
+            for px, py in picked_points_px:
+                point_elem = ET.SubElement(picked_elem, "point")
+                point_elem.text = f"[{px:.12g},{py:.12g}]"
+
+        # Target points (micrometers)
+        if target_points_um is not None:
+            target_elem = ET.SubElement(metadata, "target_points_um")
+            for ux, uy in target_points_um:
+                point_elem = ET.SubElement(target_elem, "point")
+                point_elem.text = f"[{ux:.12g},{uy:.12g}]"
+
+        # RMS error
+        if rms_error_um is not None:
+            ET.SubElement(metadata, "rms_error_um").text = f"{rms_error_um:.12g}"
+
+        # Transformation type
+        if affine_only is not None:
+            ET.SubElement(metadata, "affine_only").text = str(affine_only).lower()
+
     Path(lys_out).write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
+
+def extract_image_paths_from_lys(lys_file: str) -> list[str]:
+    """
+    Parse a .lys file and extract all image file paths from img::Object annotations.
+
+    Args:
+        lys_file: Path to the .lys file
+
+    Returns:
+        List of image file paths found in the LYS file
+    """
+    try:
+        xml_text = Path(lys_file).read_text(encoding="utf-8")
+        root = ET.fromstring(xml_text)
+
+        image_paths = []
+
+        # Find all annotations with class="img::Object"
+        for ann in root.iter("annotation"):
+            class_elem = ann.find("class")
+            if class_elem is not None and class_elem.text == "img::Object":
+                value_elem = ann.find("value")
+                if value_elem is not None and value_elem.text:
+                    # Parse the value string to extract file path
+                    # Format: "...;file='path/to/image.jpg'"
+                    value_str = value_elem.text
+                    if "file='" in value_str:
+                        # Extract path between file=' and the closing '
+                        start = value_str.index("file='") + 6
+                        end = value_str.index("'", start)
+                        file_path = value_str[start:end]
+                        # Unescape double backslashes
+                        file_path = file_path.replace('\\\\', '\\')
+                        image_paths.append(file_path)
+
+        return image_paths
+    except Exception as e:
+        print(f"Error extracting images from {lys_file}: {e}")
+        return []
