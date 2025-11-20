@@ -217,6 +217,172 @@ QScrollBar::handle:horizontal:hover {
 }
 """
 
+class CosineWaveWidget(QtWidgets.QWidget):
+    """Animated cosine wave that oscillates on hover."""
+
+    def __init__(self, size=32, parent=None):
+        super().__init__(parent)
+        self.setFixedSize(size, size)
+        self.size = size
+
+        # Wave parameters (precise measurements from icon.ico)
+        # Thickness: 10% of box dimensions
+        self.line_thickness = size * 0.10
+
+        # First peak: 287/1080 from top
+        self.first_peak_from_top = size * (287.0 / 1080.0)
+
+        # Peak-to-trough height: 549/1080 of box
+        self.peak_to_trough = size * (549.0 / 1080.0)
+
+        # Second peak is 76/1080 lower than first peak
+        self.second_peak_offset = size * (76.0 / 1080.0)
+
+        # Second minimum is 36/1080 lower than first minimum
+        self.second_min_offset = size * (36.0 / 1080.0)
+
+        self.phase_offset = 0.0  # Current animation phase
+        self.target_phase = 0.0
+        self.is_animating = False
+        self.is_returning = False
+
+        # Animation settings
+        self.fps = 30
+        self.wave_speed = 2.0  # seconds per cycle
+        self.phase_increment = (2 * 3.14159) / (self.fps * self.wave_speed)
+
+        # Animation timer
+        self.timer = QtCore.QTimer()
+        self.timer.timeout.connect(self._update_animation)
+
+        # Enable mouse tracking for hover
+        self.setMouseTracking(True)
+        self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
+
+    def enterEvent(self, event):
+        """Start animation when mouse enters."""
+        self.is_animating = True
+        self.is_returning = False
+        if not self.timer.isActive():
+            self.timer.start(1000 // self.fps)
+
+    def leaveEvent(self, event):
+        """Stop animation and return to start when mouse leaves."""
+        self.is_animating = False
+        self.is_returning = True
+
+    def _update_animation(self):
+        """Update animation frame."""
+        if self.is_animating:
+            # Continuously scroll the wave
+            self.phase_offset += self.phase_increment
+            self.phase_offset = self.phase_offset % (2 * 3.14159)
+            self.update()
+        elif self.is_returning:
+            # Smoothly return to starting position
+            if abs(self.phase_offset) < 0.01:
+                self.phase_offset = 0.0
+                self.is_returning = False
+                self.timer.stop()
+            else:
+                # Decay towards zero
+                self.phase_offset *= 0.85
+            self.update()
+        else:
+            self.timer.stop()
+
+    def paintEvent(self, event):
+        """Draw the W-shaped wave with precise measurements."""
+        import math
+
+        painter = QtGui.QPainter(self)
+        painter.setRenderHint(QtGui.QPainter.RenderHint.Antialiasing)
+
+        # Black background
+        painter.fillRect(self.rect(), QtGui.QColor(0, 0, 0))
+
+        # White pen with precise thickness
+        pen = QtGui.QPen(QtGui.QColor(255, 255, 255), int(self.line_thickness))
+        pen.setCapStyle(QtCore.Qt.PenCapStyle.RoundCap)
+        pen.setJoinStyle(QtCore.Qt.PenJoinStyle.RoundJoin)
+        painter.setPen(pen)
+
+        # Calculate key points for W shape
+        # W shape has: peak1 -> trough1 -> peak2 -> trough2 -> peak3
+        # Left peak (lowest position, smallest amplitude)
+        # Middle peak (higher position, medium amplitude)
+        # Right peak (highest position, largest amplitude)
+        width = self.size
+
+        # First peak (left side of W) - lowest position of all peaks
+        first_peak_y = self.first_peak_from_top
+
+        # First trough (first valley) - measured from first peak
+        first_trough_y = first_peak_y + self.peak_to_trough
+
+        # Second peak (middle of W) - 76/1080 HIGHER than first (closer to top)
+        second_peak_y = first_peak_y - self.second_peak_offset
+
+        # Second trough (second valley) - lower than first trough
+        second_trough_y = first_trough_y + self.second_min_offset
+
+        # Third peak (right side, off-screen edge) - even higher than middle peak
+        # For now, make it same as middle peak (we can adjust if needed)
+        third_peak_y = second_peak_y - self.second_peak_offset
+
+        # Draw W shape with smooth curves using point-by-point rendering
+        path = QtGui.QPainterPath()
+        num_points = width * 4  # High resolution for smooth curve
+
+        for i in range(num_points + 1):
+            x = (i / num_points) * width
+            t = i / num_points  # Progress from 0 to 1
+
+            # Apply animation phase offset (shifts the wave horizontally)
+            animated_t = (t + self.phase_offset / (2 * math.pi)) % 1.0
+
+            # W shape: 4 segments with smoother easing (cubic easing instead of cosine)
+            # Segment 1 (0 to 0.25): first peak down to first trough
+            # Segment 2 (0.25 to 0.5): first trough up to second peak
+            # Segment 3 (0.5 to 0.75): second peak down to second trough
+            # Segment 4 (0.75 to 1.0): second trough up to third peak
+
+            def smooth_step(t):
+                """Smoother easing function (cubic hermite interpolation)"""
+                return t * t * (3 - 2 * t)
+
+            if animated_t < 0.25:
+                # Segment 1: first peak -> first trough
+                local_t = animated_t / 0.25  # 0 to 1
+                ease_t = smooth_step(local_t)
+                y = first_peak_y + (first_trough_y - first_peak_y) * ease_t
+
+            elif animated_t < 0.5:
+                # Segment 2: first trough -> second peak
+                local_t = (animated_t - 0.25) / 0.25  # 0 to 1
+                ease_t = smooth_step(local_t)
+                y = first_trough_y + (second_peak_y - first_trough_y) * ease_t
+
+            elif animated_t < 0.75:
+                # Segment 3: second peak -> second trough
+                local_t = (animated_t - 0.5) / 0.25  # 0 to 1
+                ease_t = smooth_step(local_t)
+                y = second_peak_y + (second_trough_y - second_peak_y) * ease_t
+
+            else:
+                # Segment 4: second trough -> third peak (ends at right edge)
+                local_t = (animated_t - 0.75) / 0.25  # 0 to 1
+                ease_t = smooth_step(local_t)
+                y = second_trough_y + (third_peak_y - second_trough_y) * ease_t
+
+            if i == 0:
+                path.moveTo(x, y)
+            else:
+                path.lineTo(x, y)
+
+        painter.drawPath(path)
+
+
 class AquaHeader(QtWidgets.QWidget):
     def __init__(self, title, parent=None):
         super().__init__(parent)
@@ -225,13 +391,19 @@ class AquaHeader(QtWidgets.QWidget):
         self.setFixedHeight(56)
         self.setAttribute(QtCore.Qt.WidgetAttribute.WA_StyledBackground, True)
 
-        # Load the icon
-        icon_path = Path(__file__).parent / "icon.ico"
-        self.icon = QtGui.QPixmap(str(icon_path)) if icon_path.exists() else None
+        # Create animated wave widget instead of static icon
+        self.wave_widget = CosineWaveWidget(size=32, parent=self)
 
     def set_dark_mode(self, enabled: bool):
         self.dark_mode = enabled
         self.update()
+
+    def resizeEvent(self, event):
+        """Position wave widget when header is resized."""
+        super().resizeEvent(event)
+        # Position wave widget in top-left with padding
+        wave_y = (self.height() - 32) // 2
+        self.wave_widget.move(16, wave_y)
 
     def paintEvent(self, e):
         p = QtGui.QPainter(self)
@@ -255,21 +427,8 @@ class AquaHeader(QtWidgets.QWidget):
             font = QtGui.QFont("Segoe UI Semibold", 12)
         p.setFont(font)
 
-        # Draw icon and text
-        x_offset = 16
-        if self.icon and not self.icon.isNull():
-            # Scale icon to fit header height with some padding
-            icon_size = 32  # Slightly smaller than header height for nice padding
-            scaled_icon = self.icon.scaled(
-                icon_size, icon_size,
-                QtCore.Qt.AspectRatioMode.KeepAspectRatio,
-                QtCore.Qt.TransformationMode.SmoothTransformation
-            )
-            # Center icon vertically
-            icon_y = (rect.height() - icon_size) // 2
-            p.drawPixmap(x_offset, icon_y, scaled_icon)
-            x_offset += icon_size + 8  # Add spacing after icon
-
+        # Draw text (wave widget is drawn automatically as a child widget)
+        x_offset = 16 + 32 + 8  # Padding + wave width + spacing
         p.drawText(
             QtCore.QRect(x_offset, 0, rect.width() - x_offset - 16, rect.height()),
             QtCore.Qt.AlignmentFlag.AlignVCenter | QtCore.Qt.AlignmentFlag.AlignLeft,

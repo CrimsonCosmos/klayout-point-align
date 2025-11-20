@@ -132,3 +132,42 @@ def update_klayout_session(lys_in: str, lys_out: str,
             ET.SubElement(metadata, "affine_only").text = str(affine_only).lower()
 
     Path(lys_out).write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
+
+def extract_image_paths_from_lys(lys_file: str) -> list[str]:
+    """
+    Parse a .lys file and extract all image file paths from img::Object annotations.
+
+    Args:
+        lys_file: Path to the .lys file
+
+    Returns:
+        List of image file paths found in the LYS file
+    """
+    try:
+        xml_text = Path(lys_file).read_text(encoding="utf-8")
+        root = ET.fromstring(xml_text)
+
+        image_paths = []
+
+        # Find all annotations with class="img::Object"
+        for ann in root.iter("annotation"):
+            class_elem = ann.find("class")
+            if class_elem is not None and class_elem.text == "img::Object":
+                value_elem = ann.find("value")
+                if value_elem is not None and value_elem.text:
+                    # Parse the value string to extract file path
+                    # Format: "...;file='path/to/image.jpg'"
+                    value_str = value_elem.text
+                    if "file='" in value_str:
+                        # Extract path between file=' and the closing '
+                        start = value_str.index("file='") + 6
+                        end = value_str.index("'", start)
+                        file_path = value_str[start:end]
+                        # Unescape double backslashes
+                        file_path = file_path.replace('\\\\', '\\')
+                        image_paths.append(file_path)
+
+        return image_paths
+    except Exception as e:
+        print(f"Error extracting images from {lys_file}: {e}")
+        return []

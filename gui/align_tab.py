@@ -32,6 +32,15 @@ def resource_path(rel_path: str) -> Path:
     return base / rel_path
 
 
+class ClickableLabel(QtWidgets.QLabel):
+    """QLabel that emits a signal when double-clicked."""
+    doubleClicked = QtCore.Signal()
+
+    def mouseDoubleClickEvent(self, event):
+        self.doubleClicked.emit()
+        super().mouseDoubleClickEvent(event)
+
+
 class ImageStripWidget(QtWidgets.QWidget):
     """Custom widget representing a single image with full alignment controls."""
 
@@ -48,8 +57,8 @@ class ImageStripWidget(QtWidgets.QWidget):
 
     def _build_ui(self):
         layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(4, 4, 4, 4)
-        layout.setSpacing(8)
+        layout.setContentsMargins(2, 2, 2, 2)
+        layout.setSpacing(6)
 
         # Checkbox
         self.checkbox = QtWidgets.QCheckBox()
@@ -57,86 +66,68 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.checkbox.stateChanged.connect(self._on_check_changed)
         layout.addWidget(self.checkbox)
 
-        # 1. Select Image (display only - already selected)
-        image_section = QtWidgets.QVBoxLayout()
-        image_section.setSpacing(2)
+        # 1. Image thumbnail and name (horizontal layout)
+        image_section = QtWidgets.QHBoxLayout()
+        image_section.setSpacing(4)
 
-        thumbnail_label = QtWidgets.QLabel()
-        thumbnail = self._create_thumbnail(self.image_path, 48)
+        self.thumbnail_label = ClickableLabel()
+        thumbnail = self._create_thumbnail(self.image_path, 32)
         if thumbnail:
-            thumbnail_label.setPixmap(thumbnail)
+            self.thumbnail_label.setPixmap(thumbnail)
         else:
-            thumbnail_label.setText("[No preview]")
-        thumbnail_label.setFixedSize(48, 48)
-        thumbnail_label.setAlignment(QtCore.Qt.AlignCenter)
-        image_section.addWidget(thumbnail_label)
+            self.thumbnail_label.setText("[?]")
+        self.thumbnail_label.setFixedSize(32, 32)
+        self.thumbnail_label.setAlignment(QtCore.Qt.AlignCenter)
+        self.thumbnail_label.setToolTip("Double-click to preview image")
+        self.thumbnail_label.setCursor(QtCore.Qt.PointingHandCursor)
+        self.thumbnail_label.doubleClicked.connect(self._show_image_preview)
+        image_section.addWidget(self.thumbnail_label)
 
         name_label = QtWidgets.QLabel(Path(self.image_path).name)
         name_label.setToolTip(self.image_path)
-        name_label.setMaximumWidth(150)
-        name_label.setWordWrap(True)
+        name_label.setMaximumWidth(120)
+        name_label.setWordWrap(False)
+        font = name_label.font()
+        font.setPointSize(8)
+        name_label.setFont(font)
         image_section.addWidget(name_label)
         layout.addLayout(image_section)
 
-        # 2. Selected Coordinates
-        coord_section = QtWidgets.QVBoxLayout()
-        coord_section.setSpacing(2)
-        coord_label = QtWidgets.QLabel("Coordinates:")
-        coord_label.setStyleSheet("font-weight: bold;")
-        coord_section.addWidget(coord_label)
+        # 2. Coordinates section (compact horizontal)
+        coord_section = QtWidgets.QHBoxLayout()
+        coord_section.setSpacing(3)
 
         self.coord_display = QtWidgets.QLineEdit()
         self.coord_display.setReadOnly(True)
-        self.coord_display.setPlaceholderText("Not yet selected")
-        self.coord_display.setMinimumWidth(180)
+        self.coord_display.setPlaceholderText("Click Pick...")
+        self.coord_display.setMinimumWidth(140)
+        self.coord_display.setMaximumHeight(24)
         self.coord_display.setToolTip("The 4 fiducial points clicked on the image")
+        font = self.coord_display.font()
+        font.setPointSize(8)
+        self.coord_display.setFont(font)
         coord_section.addWidget(self.coord_display)
 
-        btn_select_coords = QtWidgets.QPushButton("Pick Points")
+        btn_select_coords = QtWidgets.QPushButton("Pick")
         btn_select_coords.setToolTip("Click to select 4 fiducial points on the image")
+        btn_select_coords.setMaximumWidth(50)
+        btn_select_coords.setMaximumHeight(24)
         btn_select_coords.clicked.connect(self._on_pick_points)
         coord_section.addWidget(btn_select_coords)
         layout.addLayout(coord_section)
 
-        # 3. Select GDS Landmarks dropdown
-        landmark_section = QtWidgets.QVBoxLayout()
-        landmark_section.setSpacing(2)
-        landmark_label = QtWidgets.QLabel("GDS Landmarks:")
-        landmark_label.setStyleSheet("font-weight: bold;")
-        landmark_section.addWidget(landmark_label)
-
+        # 3. GDS Landmarks dropdown (no label, just combo)
         self.landmark_combo = QtWidgets.QComboBox()
         self.landmark_combo.addItems(self.available_presets)
         self.landmark_combo.setCurrentText("[Default]")
-        self.landmark_combo.setToolTip("Select which GDS landmark preset to use")
-        self.landmark_combo.setMinimumWidth(120)
-        landmark_section.addWidget(self.landmark_combo)
-        layout.addLayout(landmark_section)
-
-        # 4. Select Output File
-        output_section = QtWidgets.QVBoxLayout()
-        output_section.setSpacing(2)
-        output_label = QtWidgets.QLabel("Output:")
-        output_label.setStyleSheet("font-weight: bold;")
-        output_section.addWidget(output_label)
-
-        self.output_field = QtWidgets.QLineEdit()
-        self.output_field.setPlaceholderText("Auto-generated")
-        self.output_field.setMinimumWidth(150)
-        self.output_field.setToolTip("Leave empty for auto-generated filename")
-        output_section.addWidget(self.output_field)
-
-        btn_browse_output = QtWidgets.QPushButton("Browse...")
-        btn_browse_output.clicked.connect(self._on_browse_output)
-        output_section.addWidget(btn_browse_output)
-        layout.addLayout(output_section)
-
-        # 5. Run button
-        self.run_btn = QtWidgets.QPushButton("Run")
-        self.run_btn.setToolTip("Align this image now")
-        self.run_btn.setMinimumWidth(80)
-        self.run_btn.clicked.connect(self._on_run_clicked)
-        layout.addWidget(self.run_btn)
+        self.landmark_combo.setToolTip("GDS landmark preset (auto-runs when changed)")
+        self.landmark_combo.setMinimumWidth(100)
+        self.landmark_combo.setMaximumHeight(24)
+        font = self.landmark_combo.font()
+        font.setPointSize(8)
+        self.landmark_combo.setFont(font)
+        self.landmark_combo.currentTextChanged.connect(self._on_settings_changed)
+        layout.addWidget(self.landmark_combo)
 
     def _create_thumbnail(self, img_path: str, size: int = 48) -> Optional[QtGui.QPixmap]:
         """Create a thumbnail pixmap from an image file."""
@@ -162,26 +153,25 @@ class ImageStripWidget(QtWidgets.QWidget):
                 coords_str = ",".join(f"({p[0]:.1f},{p[1]:.1f})" for p in points)
                 self.set_coordinates(coords_str)
                 self.coordinatesChanged.emit(self.image_path, coords_str)
+                # Auto-run alignment after picking points
+                self._auto_run_if_ready()
             # If no points (user cancelled), do nothing
         except Exception as e:
             from qt_compat import QtWidgets
             QtWidgets.QMessageBox.warning(self, "Error",
                 f"Failed to launch point picker:\n{str(e)}")
 
-    def _on_browse_output(self):
-        """Browse for output file."""
-        from qt_compat import QtWidgets
-        filename, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Select Output LYS File", "", "LYS Files (*.lys);;All Files (*.*)"
-        )
-        if filename:
-            self.output_field.setText(filename)
+    def _on_settings_changed(self):
+        """Called when landmark preset changes - auto-run if ready."""
+        self._auto_run_if_ready()
 
-    def _on_run_clicked(self):
-        """Emit signal to run alignment for this image."""
-        landmark_preset = self.landmark_combo.currentText()
-        output_file = self.output_field.text().strip() or "auto"
-        self.alignRequested.emit(self.image_path, landmark_preset, output_file)
+    def _auto_run_if_ready(self):
+        """Auto-run alignment if both coordinates and landmark are set."""
+        # Check if we have both coordinates and landmark preset
+        if self.selected_coordinates and self.landmark_combo.currentText():
+            landmark_preset = self.landmark_combo.currentText()
+            output_file = "auto"  # Always auto-generate output filename
+            self.alignRequested.emit(self.image_path, landmark_preset, output_file)
 
     def _on_check_changed(self, state):
         checked_value = QtCore.Qt.Checked.value if hasattr(QtCore.Qt.Checked, 'value') else QtCore.Qt.Checked
@@ -203,10 +193,6 @@ class ImageStripWidget(QtWidgets.QWidget):
         """Get the selected landmark preset name."""
         return self.landmark_combo.currentText()
 
-    def get_output_file(self) -> str:
-        """Get the output file path (or empty for auto-generated)."""
-        return self.output_field.text().strip()
-
     def update_presets(self, presets: list):
         """Update the available landmark presets in the dropdown."""
         current = self.landmark_combo.currentText()
@@ -214,6 +200,35 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.landmark_combo.addItems(presets)
         if current in presets:
             self.landmark_combo.setCurrentText(current)
+
+    def _show_image_preview(self):
+        """Show a larger preview of the image in a dialog."""
+        dialog = QtWidgets.QDialog(self)
+        dialog.setWindowTitle(Path(self.image_path).name)
+        dialog.setMinimumSize(600, 600)
+
+        layout = QtWidgets.QVBoxLayout(dialog)
+
+        # Load and display image
+        label = QtWidgets.QLabel()
+        pixmap = QtGui.QPixmap(self.image_path)
+        if not pixmap.isNull():
+            # Scale to fit in dialog while maintaining aspect ratio
+            scaled = pixmap.scaled(800, 800, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            label.setPixmap(scaled)
+            label.setAlignment(QtCore.Qt.AlignCenter)
+        else:
+            label.setText("Failed to load image")
+            label.setAlignment(QtCore.Qt.AlignCenter)
+
+        layout.addWidget(label)
+
+        # Close button
+        btn_close = QtWidgets.QPushButton("Close")
+        btn_close.clicked.connect(dialog.accept)
+        layout.addWidget(btn_close)
+
+        dialog.exec()
 
 
 class PresetManagerWidget(QtWidgets.QGroupBox):
@@ -395,10 +410,15 @@ class SessionWidget(QtWidgets.QGroupBox):
         self.preset_manager = preset_manager
         self.image_strips: Dict[str, ImageStripWidget] = {}  # path -> widget
 
-        self.setCheckable(True)
-        self.setChecked(False)  # Collapsed by default
+        # Don't use checkable GroupBox - it disables all children when unchecked
+        # Sessions are always expanded and interactive
+        self.setCheckable(False)
 
         self._build_ui()
+
+        # If opened from existing LYS file, load images from it
+        if lys_path and lys_path.exists():
+            self._load_images_from_lys()
 
     def _build_ui(self):
         """Build UI for this session."""
@@ -443,20 +463,14 @@ class SessionWidget(QtWidgets.QGroupBox):
 
         layout.addLayout(controls_row)
 
-        # Scroll area for image strips
-        scroll = QtWidgets.QScrollArea()
-        scroll.setWidgetResizable(True)
-        scroll.setHorizontalScrollBarPolicy(QtCore.Qt.ScrollBarAlwaysOff)
-        scroll.setMinimumHeight(200)
-
+        # Container for image strips (no scroll area - let session grow naturally)
         self.image_container = QtWidgets.QWidget()
         self.image_layout = QtWidgets.QVBoxLayout(self.image_container)
         self.image_layout.setContentsMargins(0, 0, 0, 0)
         self.image_layout.setSpacing(4)
         self.image_layout.addStretch(1)
 
-        scroll.setWidget(self.image_container)
-        layout.addWidget(scroll)
+        layout.addWidget(self.image_container)
 
     def add_images(self):
         """Add images to this session."""
@@ -490,6 +504,45 @@ class SessionWidget(QtWidgets.QGroupBox):
         self.chk_select_all.setChecked(False)
         self.chk_select_all.setEnabled(False)
         self.btn_run_selected.setEnabled(False)
+
+    def _load_images_from_lys(self):
+        """Load image paths from an existing LYS file."""
+        if not self.lys_path or not self.lys_path.exists():
+            return
+
+        try:
+            from klayout_point_align.lys_io import extract_image_paths_from_lys
+
+            image_paths = extract_image_paths_from_lys(str(self.lys_path))
+            preset_names = self.preset_manager.get_preset_names()
+
+            for img_path in image_paths:
+                # Check if image file exists
+                if not Path(img_path).exists():
+                    print(f"Warning: Image not found: {img_path}")
+                    continue
+
+                if img_path not in self.image_strips:
+                    # Create image strip widget
+                    strip = ImageStripWidget(img_path, preset_names, self.image_container)
+                    strip.alignRequested.connect(self._on_single_align)
+                    strip.checkStateChanged.connect(self._on_strip_check_changed)
+
+                    # Add to layout (before the stretch)
+                    self.image_layout.insertWidget(self.image_layout.count() - 1, strip)
+                    self.image_strips[img_path] = strip
+
+            # Enable controls if we loaded images
+            if self.image_strips:
+                self.chk_select_all.setEnabled(True)
+                self.btn_run_selected.setEnabled(True)
+
+        except Exception as e:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Error Loading Images",
+                f"Failed to load images from LYS file:\n{str(e)}"
+            )
 
     def _on_delete_session(self):
         """Handle delete session button click."""
@@ -547,13 +600,10 @@ class SessionWidget(QtWidgets.QGroupBox):
         # Get landmark coordinates from preset
         coords = self.preset_manager.get_coordinates(landmark_preset)
 
-        # Determine output file
+        # Determine output file - always use session name on Desktop
         if not output_file or output_file == "auto":
-            if self.lys_path:
-                output_file = str(self.lys_path)
-            else:
-                img_name = Path(image_path).stem
-                output_file = str(Path.home() / "Desktop" / f"{img_name}-aligned.lys")
+            # Always save to Desktop with session name
+            output_file = str(Path.home() / "Desktop" / self.session_name)
 
         # Build argv for single image
         argv = self._build_argv_for_single(image_path, coords, output_file)
@@ -570,74 +620,102 @@ class SessionWidget(QtWidgets.QGroupBox):
                 "Please select at least one image to align.")
             return
 
-        # Check which selected images don't have coordinates picked
-        missing_coords = []
+        # Launch picker for images without coordinates
         for img_path in selected:
             strip = self.image_strips.get(img_path)
             if strip and not strip.selected_coordinates:
-                missing_coords.append(Path(img_path).name)
+                # Auto-launch picker for this image
+                try:
+                    from klayout_point_align.picker import pick_points_gui
+                    logger.info(f"Launching picker for {Path(img_path).name}")
 
-        if missing_coords:
-            msg = QtWidgets.QMessageBox(self)
-            msg.setIcon(QtWidgets.QMessageBox.Warning)
-            msg.setWindowTitle("Missing Fiducial Points")
-            msg.setText("⚠️ Some selected images don't have fiducial points picked yet!")
+                    points = pick_points_gui(img_path, max_points=4)
 
-            detail_text = "Images missing coordinates:\n\n" + "\n".join(f"• {name}" for name in missing_coords)
-            detail_text += "\n\nThese images will NOT be aligned."
+                    if points and len(points) == 4:
+                        # Format as string
+                        coords_str = ",".join(f"({p[0]:.1f},{p[1]:.1f})" for p in points)
+                        strip.set_coordinates(coords_str)
+                    else:
+                        # User cancelled - ask if they want to skip this image
+                        reply = QtWidgets.QMessageBox.question(
+                            self, "Skip Image?",
+                            f"No points picked for {Path(img_path).name}.\n\nSkip this image?",
+                            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel
+                        )
+                        if reply == QtWidgets.QMessageBox.Cancel:
+                            return  # Cancel entire batch
+                        else:
+                            continue  # Skip this image
+                except Exception as e:
+                    logger.log_exception(e, f"launching picker for {img_path}")
+                    QtWidgets.QMessageBox.warning(
+                        self, "Picker Error",
+                        f"Failed to launch picker for {Path(img_path).name}:\n{str(e)}"
+                    )
+                    return
 
-            msg.setDetailedText(detail_text)
-            msg.setInformativeText(f"{len(missing_coords)} of {len(selected)} selected images need fiducial points.\n\nDo you want to continue anyway?")
-            msg.setStandardButtons(QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel)
-            msg.setDefaultButton(QtWidgets.QMessageBox.Cancel)
+        # Always save to Desktop with session name (no prompt)
+        output_file = str(Path.home() / "Desktop" / self.session_name)
 
-            result = msg.exec()
-            if result != QtWidgets.QMessageBox.Yes:
-                return
-
-        # Get output file for batch
-        default_name = self.session_name if self.lys_path else f"Aligned-{datetime.datetime.now().strftime('%Y-%m-%d')}.lys"
-        output_file, _ = QtWidgets.QFileDialog.getSaveFileName(
-            self, "Save Combined LYS File",
-            str(Path.home() / "Desktop" / default_name),
-            "LYS Files (*.lys);;All Files (*.*)"
-        )
-
-        if not output_file:
-            return
-
-        # Build argv for batch
+        # Build argv for batch (now uses per-image presets)
         argv = self._build_argv_for_batch(selected, output_file)
         self.runRequested.emit(argv)
 
     def _build_argv_for_single(self, image_path: str, landmark_coords: str, output_file: str) -> list:
-        """Build command arguments for single image alignment."""
-        # Use picked coordinates from the strip
-        strip = self.image_strips.get(image_path)
-        before_coords = strip.selected_coordinates if strip else ""
+        """Build command arguments for single image alignment - includes ALL images in session."""
+        # Include ALL images in the session, not just the one being aligned
+        all_images = list(self.image_strips.keys())
 
         argv = [
-            "--files", image_path,
-            "--lys-in", "C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys",
-            "--before", before_coords,
+            "--files"] + all_images + [
+            "--lys-in", str(resource_path("Test_with_img.lys")),
             "--after", landmark_coords,
             "--affine",
             "--combined-out", output_file,
             "--auto-review",
-            "--gds-file", "C:\\Users\\gehl2\\Auto_align_program\\Test.GDS"
+            "--gds-file", str(resource_path("Test.GDS"))
         ]
+
+        # Add before coordinates for each image (empty string for unpicked images)
+        for img in all_images:
+            strip = self.image_strips.get(img)
+            if strip and strip.selected_coordinates:
+                argv.extend(["--before", strip.selected_coordinates])
+            else:
+                # For unpicked images, provide dummy tiny coordinates
+                # This will make them show up as tiny placeholders
+                argv.extend(["--before", "(0,0),(0.1,0),(0,0.1),(0.1,0.1)"])
+
         return argv
 
     def _build_argv_for_batch(self, image_paths: List[str], output_file: str) -> list:
         """Build command arguments for batch alignment."""
+
+        # Determine which landmark preset to use
+        # Check what presets are selected for each image
+        presets_used = set()
+        for img_path in image_paths:
+            strip = self.image_strips.get(img_path)
+            if strip:
+                preset = strip.get_landmark_preset()
+                presets_used.add(preset)
+
+        # If all images use the same preset, use that. Otherwise default to [Default]
+        if len(presets_used) == 1:
+            chosen_preset = list(presets_used)[0]
+        else:
+            chosen_preset = "[Default]"
+
+        landmark_coords = self.preset_manager.get_coordinates(chosen_preset)
+
         argv = ["--files"] + image_paths
         argv.extend([
-            "--lys-in", "C:\\Users\\gehl2\\Auto_align_program\\Test_with_img.lys",
-            "--after", self.preset_manager.get_coordinates("[Default]"),
+            "--lys-in", str(resource_path("Test_with_img.lys")),
+            "--after", landmark_coords,
             "--affine",
             "--combined-out", output_file,
             "--auto-review",
-            "--gds-file", "C:\\Users\\gehl2\\Auto_align_program\\Test.GDS"
+            "--gds-file", str(resource_path("Test.GDS"))
         ])
 
         # Add before coordinates for each image
@@ -689,8 +767,9 @@ class AlignTab(QtWidgets.QWidget):
         # Initialize preset manager
         self.preset_manager = LandmarkPresetManager(self._landmarks_file)
 
-        self._build_ui()
+        # Load preferences BEFORE building UI (so counter is restored before first session)
         self._load_preferences()
+        self._build_ui()
 
     # ---------------- UI ----------------
     def _build_ui(self):
@@ -736,10 +815,17 @@ class AlignTab(QtWidgets.QWidget):
 
     def _create_new_session(self):
         """Create a new session with auto-generated name."""
-        import os
+        import socket
+        import shutil
         self._session_counter += 1
-        username = os.getenv('USERNAME') or os.getenv('USER') or 'User'
-        session_name = f"Aligned{self._session_counter}By{username}.lys"
+
+        # Get computer hostname (e.g., "DESKTOP-ABC123")
+        try:
+            hostname = socket.gethostname()
+        except:
+            hostname = "UnknownPC"
+
+        session_name = f"Aligned{self._session_counter}By{hostname}.lys"
         session = SessionWidget(session_name, None, self.preset_manager, self)
 
         # Wire up the session's signals
@@ -749,6 +835,18 @@ class AlignTab(QtWidgets.QWidget):
         # Add to layout (before the stretch)
         self.sessions_layout.insertWidget(self.sessions_layout.count() - 1, session)
         self.sessions.append(session)
+
+        # Save preferences to persist counter
+        self._save_preferences()
+
+        # Create empty .lys file on Desktop immediately
+        desktop_path = Path.home() / "Desktop" / session_name
+        template_path = Path(__file__).parent.parent / "Test_with_img.lys"
+        try:
+            # Copy template to Desktop
+            shutil.copy(template_path, desktop_path)
+        except Exception as e:
+            print(f"Warning: Could not create {desktop_path}: {e}")
 
     def _open_existing_session(self):
         """Open an existing .LYS file as a new session."""
@@ -776,6 +874,14 @@ class AlignTab(QtWidgets.QWidget):
 
     def _on_session_delete_requested(self, session: SessionWidget):
         """Handle session deletion request."""
+        # Delete .lys file from Desktop
+        desktop_path = Path.home() / "Desktop" / session.session_name
+        try:
+            if desktop_path.exists():
+                desktop_path.unlink()
+        except Exception as e:
+            print(f"Warning: Could not delete {desktop_path}: {e}")
+
         # Remove from layout
         self.sessions_layout.removeWidget(session)
 
@@ -1333,23 +1439,23 @@ class AlignTab(QtWidgets.QWidget):
 
     # Preferences
     def _load_preferences(self):
-        """Load saved output path preference"""
+        """Load saved session counter"""
         try:
             if self._prefs_file.exists():
                 import json
                 with open(self._prefs_file, 'r') as f:
                     prefs = json.load(f)
-                    last_output = prefs.get('last_output_path', '')
-                    if last_output:
-                        self.out_path.setText(last_output)
+                    # Load session counter to persist across app restarts
+                    self._session_counter = prefs.get('session_counter', 0)
         except Exception:
             pass
 
     def _save_preferences(self):
-        """Save current output path to preferences"""
+        """Save session counter to preferences"""
         try:
+            import json
             prefs = {
-                'last_output_path': self.out_path.text().strip()
+                'session_counter': self._session_counter
             }
             with open(self._prefs_file, 'w') as f:
                 json.dump(prefs, f)
