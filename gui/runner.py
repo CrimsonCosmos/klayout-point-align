@@ -7,7 +7,9 @@ import os, sys, datetime, subprocess
 from pathlib import Path
 from qt_compat import QtCore
 from diagnostic_logger import get_logger
+from functools import lru_cache
 
+@lru_cache(maxsize=8)
 def resource_path(rel_path: str) -> Path:
     """Return absolute path to bundled resource (PyInstaller-safe)."""
     base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))

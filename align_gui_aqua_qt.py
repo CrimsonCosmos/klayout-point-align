@@ -11,7 +11,7 @@ from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner
 from diagnostic_logger import init_logger
 
-APP_TITLE = "Point Align v1.1"
+APP_TITLE = "Point Align v1.2"
 
 DARK_STYLESHEET = """
 QWidget {
@@ -242,14 +242,26 @@ class CosineWaveWidget(QtWidgets.QWidget):
         self.second_min_offset = size * (36.0 / 1080.0)
 
         self.phase_offset = 0.0  # Current animation phase
-        self.target_phase = 0.0
+        self.current_speed = 0.0  # Current animation speed (multiplier)
         self.is_animating = False
         self.is_returning = False
+        self.is_triggered = False  # Triggered animation (on alignment complete)
+        self.animation_start_time = 0.0  # Time when animation started
+        self.deceleration_start_time = 0.0  # Time when deceleration started
+        self.deceleration_start_speed = 0.0  # Speed when deceleration started
+        self.target_cycles = 0  # Number of cycles to complete for triggered animation
+        self.completed_cycles = 0  # Number of cycles completed
 
         # Animation settings
         self.fps = 30
-        self.wave_speed = 2.0  # seconds per cycle
-        self.phase_increment = (2 * 3.14159) / (self.fps * self.wave_speed)
+        self.wave_speed = 2.0  # seconds per cycle at full speed
+        self.base_phase_increment = (2 * 3.14159) / (self.fps * self.wave_speed)
+        self.acceleration_duration = 1.5  # seconds to reach full speed (hover)
+        self.max_speed = 1.0  # Maximum speed multiplier (hover)
+
+        # Triggered animation settings (on alignment complete)
+        self.triggered_acceleration_duration = 1.5 / 4.0  # 4x faster acceleration
+        self.triggered_max_speed = 4.0  # 4x speed multiplier
 
         # Animation timer
         self.timer = QtCore.QTimer()
@@ -259,34 +271,140 @@ class CosineWaveWidget(QtWidgets.QWidget):
         self.setMouseTracking(True)
         self.setCursor(QtCore.Qt.CursorShape.PointingHandCursor)
 
-    def enterEvent(self, event):
-        """Start animation when mouse enters."""
+    def trigger_alignment_animation(self):
+        """Trigger animation for alignment completion (3 cycles, 4x speed)."""
+        import time
+        # Don't trigger if already in a triggered animation
+        if self.is_triggered:
+            return
+
+        self.is_triggered = True
         self.is_animating = True
         self.is_returning = False
+        self.animation_start_time = time.time()
+        self.target_cycles = 3
+        self.completed_cycles = 0
+        self.phase_offset = 0.0
+        if not self.timer.isActive():
+            self.timer.start(1000 // self.fps)
+
+    def enterEvent(self, event):
+        """Start animation with acceleration when mouse enters."""
+        import time
+        # Don't override triggered animation
+        if self.is_triggered:
+            return
+
+        self.is_animating = True
+        self.is_returning = False
+        self.animation_start_time = time.time()
         if not self.timer.isActive():
             self.timer.start(1000 // self.fps)
 
     def leaveEvent(self, event):
-        """Stop animation and return to start when mouse leaves."""
+        """Start deceleration when mouse leaves."""
+        import time
+        # Don't override triggered animation
+        if self.is_triggered:
+            return
+
         self.is_animating = False
         self.is_returning = True
+        self.deceleration_start_time = time.time()
+        self.deceleration_start_speed = self.current_speed
 
     def _update_animation(self):
-        """Update animation frame."""
-        if self.is_animating:
-            # Continuously scroll the wave
-            self.phase_offset += self.phase_increment
+        """Update animation frame with acceleration/deceleration."""
+        import time
+
+        # Early exit: if nothing is happening, stop the timer immediately
+        if not self.is_animating and not self.is_returning and not self.is_triggered:
+            if self.timer.isActive():
+                self.timer.stop()
+            return
+
+        if self.is_triggered:
+            # Triggered animation: 3 cycles with 4x speed
+            elapsed = time.time() - self.animation_start_time
+
+            if self.is_animating:
+                # Accelerate 4x faster
+                if elapsed < self.triggered_acceleration_duration:
+                    progress = elapsed / self.triggered_acceleration_duration
+                    self.current_speed = progress * progress * progress * self.triggered_max_speed
+                else:
+                    self.current_speed = self.triggered_max_speed
+
+                # Track phase for cycle counting
+                old_phase = self.phase_offset
+                self.phase_offset += self.base_phase_increment * self.current_speed
+
+                # Check if we completed a cycle
+                if old_phase < (2 * 3.14159) and self.phase_offset >= (2 * 3.14159):
+                    self.completed_cycles += 1
+                    if self.completed_cycles >= self.target_cycles:
+                        # Start deceleration after 3 cycles
+                        self.is_animating = False
+                        self.is_returning = True
+                        self.deceleration_start_time = time.time()
+                        self.deceleration_start_speed = self.current_speed
+
+                self.phase_offset = self.phase_offset % (2 * 3.14159)
+                self.update()
+
+            elif self.is_returning:
+                # Decelerate at same rate as acceleration
+                decel_elapsed = time.time() - self.deceleration_start_time
+
+                if decel_elapsed < self.triggered_acceleration_duration:
+                    progress = decel_elapsed / self.triggered_acceleration_duration
+                    ease_out = 1.0 - ((1.0 - progress) ** 3)
+                    self.current_speed = self.deceleration_start_speed * (1.0 - ease_out)
+                else:
+                    self.current_speed = 0.0
+
+                self.phase_offset += self.base_phase_increment * self.current_speed
+
+                # Check if we've stopped
+                if self.phase_offset >= (2 * 3.14159) and self.current_speed < 0.05:
+                    self.phase_offset = 0.0
+                    self.current_speed = 0.0
+                    self.is_returning = False
+                    self.is_triggered = False
+                    self.timer.stop()
+                self.update()
+
+        elif self.is_animating:
+            # Normal hover animation
+            elapsed = time.time() - self.animation_start_time
+            if elapsed < self.acceleration_duration:
+                progress = elapsed / self.acceleration_duration
+                self.current_speed = progress * progress * progress * self.max_speed
+            else:
+                self.current_speed = self.max_speed
+
+            self.phase_offset += self.base_phase_increment * self.current_speed
             self.phase_offset = self.phase_offset % (2 * 3.14159)
             self.update()
+
         elif self.is_returning:
-            # Smoothly return to starting position
-            if abs(self.phase_offset) < 0.01:
+            # Normal hover deceleration
+            elapsed = time.time() - self.deceleration_start_time
+
+            if elapsed < self.acceleration_duration:
+                progress = elapsed / self.acceleration_duration
+                ease_out = 1.0 - ((1.0 - progress) ** 3)
+                self.current_speed = self.deceleration_start_speed * (1.0 - ease_out)
+            else:
+                self.current_speed = 0.0
+
+            self.phase_offset += self.base_phase_increment * self.current_speed
+
+            if self.phase_offset >= (2 * 3.14159) and self.current_speed < 0.05:
                 self.phase_offset = 0.0
+                self.current_speed = 0.0
                 self.is_returning = False
                 self.timer.stop()
-            else:
-                # Decay towards zero
-                self.phase_offset *= 0.85
             self.update()
         else:
             self.timer.stop()
@@ -474,6 +592,9 @@ class MainWin(QtWidgets.QMainWindow):
         scroll.setWidget(self.align_tab)
         root.addWidget(scroll, 1)
 
+        # Pass wave widget reference to align tab for animation triggers
+        self.align_tab.wave_widget = self.header.wave_widget
+
         # Hook runRequested -> start worker
         self.align_tab.runRequested.connect(self._start_run)
         self._worker = None
@@ -541,8 +662,22 @@ class MainWin(QtWidgets.QMainWindow):
 
     def closeEvent(self, event):
         """Handle window close event."""
-        # In multi-session mode, no central unsaved changes tracking
-        # Sessions are independent
+        # Check if there are unaligned images
+        if self.align_tab.has_unaligned_images():
+            summary = self.align_tab.get_unaligned_summary()
+
+            reply = QtWidgets.QMessageBox.question(
+                self,
+                "Unaligned Images",
+                f"{summary}\n\nAre you sure you want to exit?",
+                QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.Cancel,
+                QtWidgets.QMessageBox.StandardButton.Cancel
+            )
+
+            if reply == QtWidgets.QMessageBox.StandardButton.Cancel:
+                event.ignore()
+                return
+
         event.accept()
 
 def main():

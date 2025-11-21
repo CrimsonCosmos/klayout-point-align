@@ -171,3 +171,62 @@ def extract_image_paths_from_lys(lys_file: str) -> list[str]:
     except Exception as e:
         print(f"Error extracting images from {lys_file}: {e}")
         return []
+
+def extract_alignment_metadata_from_lys(lys_file: str) -> dict[str, str]:
+    """
+    Parse a .lys file and extract alignment metadata (picked points) for each image.
+
+    Args:
+        lys_file: Path to the .lys file
+
+    Returns:
+        Dictionary mapping image file paths to coordinate strings in the format:
+        "(x1,y1),(x2,y2),(x3,y3),(x4,y4)"
+    """
+    try:
+        xml_text = Path(lys_file).read_text(encoding="utf-8")
+        root = ET.fromstring(xml_text)
+
+        metadata_map = {}
+
+        # Find all annotations with class="img::Object"
+        for ann in root.iter("annotation"):
+            class_elem = ann.find("class")
+            if class_elem is not None and class_elem.text == "img::Object":
+                # Extract image path
+                value_elem = ann.find("value")
+                if value_elem is None or not value_elem.text:
+                    continue
+
+                value_str = value_elem.text
+                if "file='" not in value_str:
+                    continue
+
+                start = value_str.index("file='") + 6
+                end = value_str.index("'", start)
+                file_path = value_str[start:end].replace('\\\\', '\\')
+
+                # Extract picked points from alignment_metadata
+                metadata_elem = ann.find("alignment_metadata")
+                if metadata_elem is not None:
+                    picked_elem = metadata_elem.find("picked_points_px_centered")
+                    if picked_elem is not None:
+                        points = []
+                        for point_elem in picked_elem.findall("point"):
+                            if point_elem.text:
+                                # Parse "[x,y]" format
+                                coords_str = point_elem.text.strip()
+                                if coords_str.startswith('[') and coords_str.endswith(']'):
+                                    coords_str = coords_str[1:-1]  # Remove brackets
+                                    x, y = map(float, coords_str.split(','))
+                                    points.append((x, y))
+
+                        # Format as coordinate string: "(x1,y1),(x2,y2),..."
+                        if len(points) == 4:
+                            coords_str = ",".join(f"({x:.1f},{y:.1f})" for x, y in points)
+                            metadata_map[file_path] = coords_str
+
+        return metadata_map
+    except Exception as e:
+        print(f"Error extracting alignment metadata from {lys_file}: {e}")
+        return {}

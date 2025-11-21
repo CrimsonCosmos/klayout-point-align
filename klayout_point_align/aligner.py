@@ -6,7 +6,7 @@ import numpy as np
 from pathlib import Path
 
 from .picker import pick_points_gui
-from .transforms import build_H_px_to_um, rms_um
+from .transforms import build_H_px_to_um, rms_um, sort_four_corners
 from .lys_io import update_klayout_session
 
 try:
@@ -32,13 +32,22 @@ def align_markers(before_ctr_px: Sequence[Tuple[float, float]],
                   gds_file: str | None = None) -> Tuple[np.ndarray, float]:
     """
     Compute transformation and optionally update .lys session with image annotation.
+
+    Points can be provided in any order - they will be automatically sorted into
+    canonical corner order [TL, TR, BL, BR] before alignment.
     """
+    # Sort points into canonical corner order if we have exactly 4 points
+    if len(before_ctr_px) == 4:
+        before_ctr_px = sort_four_corners(before_ctr_px)
+
     ox, oy = cfg.after_origin_um
     after_shifted = [(X + ox, Y + oy) for (X, Y) in cfg.after_pts_um]
     H = build_H_px_to_um(before_ctr_px, after_shifted, cfg.affine_only)
     err = rms_um(H, before_ctr_px, after_shifted)
 
     if lys_in and lys_out and image_file:
+        # After sorting, points are guaranteed to be [TL, TR, BL, BR]
+        # KLayout expects [TL, TR, BR, BL] for the image overlay corners
         px_tl_tr_br_bl = [before_ctr_px[0], before_ctr_px[1], before_ctr_px[3], before_ctr_px[2]]
         update_klayout_session(
             lys_in, lys_out, image_file, H, px_tl_tr_br_bl,
