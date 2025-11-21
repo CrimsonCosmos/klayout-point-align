@@ -1,6 +1,6 @@
 # klayout_point_align/transforms.py
 from __future__ import annotations
-from typing import Sequence, Tuple
+from typing import Sequence, Tuple, List
 import numpy as np
 import math
 
@@ -66,3 +66,57 @@ def rms_um(H: np.ndarray,
         Xp, Yp = map_px_to_um(H, x, y)
         s += (Xp - Xg) ** 2 + (Yp - Yg) ** 2
     return math.sqrt(s / max(1, len(ums)))
+
+def sort_four_corners(pts: Sequence[Tuple[float, float]]) -> List[Tuple[float, float]]:
+    """
+    Sort 4 arbitrary points into canonical corner order: [TL, TR, BL, BR].
+
+    Algorithm:
+    1. Find centroid of the 4 points
+    2. Classify each point by quadrant relative to centroid
+    3. Return in order: top-left, top-right, bottom-left, bottom-right
+
+    Args:
+        pts: Exactly 4 (x, y) coordinate tuples in any order
+
+    Returns:
+        List of 4 points in order: [top-left, top-right, bottom-left, bottom-right]
+
+    Raises:
+        ValueError: If not exactly 4 points provided
+    """
+    if len(pts) != 4:
+        raise ValueError(f"Expected exactly 4 points, got {len(pts)}")
+
+    # Calculate centroid
+    cx = sum(x for x, y in pts) / 4.0
+    cy = sum(y for x, y in pts) / 4.0
+
+    # Classify points by quadrant
+    top_left = None
+    top_right = None
+    bottom_left = None
+    bottom_right = None
+
+    for x, y in pts:
+        if x < cx and y < cy:  # Top-left (in image coordinates, y increases downward)
+            top_left = (x, y)
+        elif x >= cx and y < cy:  # Top-right
+            top_right = (x, y)
+        elif x < cx and y >= cy:  # Bottom-left
+            bottom_left = (x, y)
+        else:  # x >= cx and y >= cy  # Bottom-right
+            bottom_right = (x, y)
+
+    # Verify we found all 4 corners
+    if None in (top_left, top_right, bottom_left, bottom_right):
+        # Fallback: if points are collinear or degenerate, use distance-based sorting
+        # Sort by y first (top to bottom), then by x (left to right)
+        sorted_pts = sorted(pts, key=lambda p: (p[1], p[0]))
+        # Top two points (smaller y)
+        top_two = sorted(sorted_pts[:2], key=lambda p: p[0])
+        # Bottom two points (larger y)
+        bottom_two = sorted(sorted_pts[2:], key=lambda p: p[0])
+        return [top_two[0], top_two[1], bottom_two[0], bottom_two[1]]
+
+    return [top_left, top_right, bottom_left, bottom_right]

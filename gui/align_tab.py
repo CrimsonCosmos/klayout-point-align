@@ -11,6 +11,7 @@ import json
 from qt_compat import QtCore, QtGui, QtWidgets
 from diagnostic_logger import get_logger
 from landmark_presets import LandmarkPresetManager
+from gds_presets import GDSPresetManager
 
 # ---- Constants mirrored from the legacy main ----
 APP_TITLE = "Point Align v1.1"
@@ -27,9 +28,29 @@ GDS_BASENAME = "Test.GDS"
 DEFAULT_AFTER_POINTS = "(-50,60),(70,60),(-50,-60),(70,-60)"  # TL, TR, BL, BR (µm)
 ALWAYS_AUTO_REVIEW = True
 
+from functools import lru_cache
+import re
+
+@lru_cache(maxsize=8)
 def resource_path(rel_path: str) -> Path:
     base = Path(getattr(__import__("sys").modules["sys"], "_MEIPASS", Path(__file__).resolve().parent.parent))
     return base / rel_path
+
+def parse_coordinates(coord_str: str) -> List[Tuple[float, float]]:
+    """Parse coordinate string: '(-50,60),(70,60),(-50,-60),(70,-60)'"""
+    # Use regex to extract all (x,y) pairs
+    pattern = r'\(([^)]+)\)'
+    matches = re.findall(pattern, coord_str)
+    result = []
+    for match in matches:
+        try:
+            x, y = map(float, match.split(','))
+            result.append((x, y))
+        except ValueError:
+            raise ValueError(f"Invalid coordinate pair: {match}")
+    if len(result) != 4:
+        raise ValueError(f"Expected 4 coordinates, got {len(result)}")
+    return result
 
 
 class ClickableLabel(QtWidgets.QLabel):
@@ -99,24 +120,22 @@ class ImageStripWidget(QtWidgets.QWidget):
 
         self.coord_display = QtWidgets.QLineEdit()
         self.coord_display.setReadOnly(True)
-        self.coord_display.setPlaceholderText("Click Pick...")
-        self.coord_display.setMinimumWidth(140)
+        self.coord_display.setPlaceholderText("No coordinates picked yet")
+        self.coord_display.setMinimumWidth(200)
         self.coord_display.setMaximumHeight(24)
         self.coord_display.setToolTip("The 4 fiducial points clicked on the image")
         font = self.coord_display.font()
         font.setPointSize(8)
         self.coord_display.setFont(font)
         coord_section.addWidget(self.coord_display)
-
-        btn_select_coords = QtWidgets.QPushButton("Pick")
-        btn_select_coords.setToolTip("Click to select 4 fiducial points on the image")
-        btn_select_coords.setMaximumWidth(50)
-        btn_select_coords.setMaximumHeight(24)
-        btn_select_coords.clicked.connect(self._on_pick_points)
-        coord_section.addWidget(btn_select_coords)
         layout.addLayout(coord_section)
 
-        # 3. GDS Landmarks dropdown (no label, just combo)
+        # 3. GDS Landmarks dropdown with label
+        landmark_row = QtWidgets.QHBoxLayout()
+        landmark_label = QtWidgets.QLabel("Landmark Preset:")
+        landmark_label.setStyleSheet("font-weight: bold;")
+        landmark_row.addWidget(landmark_label)
+
         self.landmark_combo = QtWidgets.QComboBox()
         self.landmark_combo.addItems(self.available_presets)
         self.landmark_combo.setCurrentText("[Default]")
@@ -127,7 +146,11 @@ class ImageStripWidget(QtWidgets.QWidget):
         font.setPointSize(8)
         self.landmark_combo.setFont(font)
         self.landmark_combo.currentTextChanged.connect(self._on_settings_changed)
-        layout.addWidget(self.landmark_combo)
+        landmark_row.addWidget(self.landmark_combo, 1)
+
+        landmark_row.addStretch(3)
+
+        layout.addLayout(landmark_row)
 
     def _create_thumbnail(self, img_path: str, size: int = 48) -> Optional[QtGui.QPixmap]:
         """Create a thumbnail pixmap from an image file."""
@@ -136,7 +159,8 @@ class ImageStripWidget(QtWidgets.QWidget):
             if qimg.isNull():
                 return None
             pixmap = QtGui.QPixmap.fromImage(qimg)
-            return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.SmoothTransformation)
+            # Use FastTransformation for thumbnails - faster and quality difference is negligible at small sizes
+            return pixmap.scaled(size, size, QtCore.Qt.KeepAspectRatio, QtCore.Qt.FastTransformation)
         except Exception:
             return None
 
@@ -258,10 +282,20 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         list_section = QtWidgets.QVBoxLayout()
         list_section.addWidget(QtWidgets.QLabel("Available Presets:"))
 
-        self.preset_list = QtWidgets.QListWidget()
-        self.preset_list.setMaximumHeight(120)
+        # Container for preset items
+        self.preset_container = QtWidgets.QWidget()
+        self.preset_layout = QtWidgets.QVBoxLayout(self.preset_container)
+        self.preset_layout.setContentsMargins(0, 0, 0, 0)
+        self.preset_layout.setSpacing(2)
+
+        # Scroll area for presets
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidget(self.preset_container)
+        scroll.setWidgetResizable(True)
+        scroll.setMaximumHeight(120)
+
         self._refresh_preset_list()
-        list_section.addWidget(self.preset_list)
+        list_section.addWidget(scroll)
         controls_layout.addLayout(list_section, 2)
 
         # Buttons
@@ -271,14 +305,6 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         self.btn_add.clicked.connect(self._on_add_preset)
         button_section.addWidget(self.btn_add)
 
-        self.btn_edit = QtWidgets.QPushButton("Edit...")
-        self.btn_edit.clicked.connect(self._on_edit_preset)
-        button_section.addWidget(self.btn_edit)
-
-        self.btn_rename = QtWidgets.QPushButton("Rename...")
-        self.btn_rename.clicked.connect(self._on_rename_preset)
-        button_section.addWidget(self.btn_rename)
-
         self.btn_delete = QtWidgets.QPushButton("Delete")
         self.btn_delete.clicked.connect(self._on_delete_preset)
         button_section.addWidget(self.btn_delete)
@@ -286,15 +312,80 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         button_section.addStretch()
         controls_layout.addLayout(button_section, 1)
 
+        # Reference image section (bottom right) - initially hidden
+        self.reference_section = QtWidgets.QVBoxLayout()
+        self.reference_section.addStretch()  # Push everything to bottom
+
+        self.reference_label = QtWidgets.QLabel("Here are the points that correspond with the Default Landmark Preset")
+        self.reference_label.setWordWrap(True)
+        self.reference_label.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.reference_section.addWidget(self.reference_label)
+
+        # Image display
+        self.reference_image = QtWidgets.QLabel()
+        self.reference_image.setAlignment(QtCore.Qt.AlignmentFlag.AlignCenter)
+        self.reference_image.setStyleSheet("border: 1px solid #ccc; background-color: #f5f5f5;")
+        self.reference_image.setMinimumSize(200, 150)
+        self.reference_image.setMaximumSize(300, 225)
+        self.reference_image.setScaledContents(True)
+
+        # Load reference image
+        reference_path = Path(__file__).parent.parent / "example_points_for_manual.png"
+        if reference_path.exists():
+            pixmap = QtGui.QPixmap(str(reference_path))
+            if not pixmap.isNull():
+                self.reference_image.setPixmap(pixmap)
+        else:
+            self.reference_image.setText("(Reference image not found)")
+            self.reference_image.setStyleSheet("border: 1px solid #ccc; background-color: #f5f5f5; color: #999;")
+
+        self.reference_section.addWidget(self.reference_image)
+        controls_layout.addLayout(self.reference_section, 1)
+
+        # Hide reference image initially
+        self.reference_label.hide()
+        self.reference_image.hide()
+        self.reference_visible = False
+
         layout.addLayout(controls_layout)
 
     def _refresh_preset_list(self):
         """Refresh the preset list display."""
-        self.preset_list.clear()
+        # Clear existing items
+        while self.preset_layout.count():
+            child = self.preset_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        # Add preset items
         for name in self.preset_manager.get_preset_names():
             coords = self.preset_manager.get_coordinates(name)
             item_text = f"{name}: {coords}"
-            self.preset_list.addItem(item_text)
+
+            # Create row for this preset
+            row = QtWidgets.QWidget()
+            row_layout = QtWidgets.QHBoxLayout(row)
+            row_layout.setContentsMargins(5, 2, 5, 2)
+            row_layout.setSpacing(5)
+
+            # If this is the Default preset, add the help button first
+            if name == self.preset_manager.DEFAULT_PRESET_NAME:
+                self.btn_help = QtWidgets.QPushButton("❓")
+                self.btn_help.setToolTip("Show/hide reference image for Default landmark preset")
+                self.btn_help.setFixedSize(25, 25)
+                self.btn_help.setStyleSheet("color: #2196F3; font-weight: bold; font-size: 14px;")
+                self.btn_help.clicked.connect(self._toggle_reference_image)
+                row_layout.addWidget(self.btn_help)
+
+            # Preset label
+            label = QtWidgets.QLabel(item_text)
+            label.setStyleSheet("padding: 2px;")
+            row_layout.addWidget(label, 1)
+
+            self.preset_layout.addWidget(row)
+
+        # Add stretch at the end
+        self.preset_layout.addStretch()
 
     def _on_add_preset(self):
         """Add a new preset."""
@@ -312,6 +403,23 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         if not ok or not coords.strip():
             return
 
+        # Validate format before trying to add
+        from landmark_presets import LandmarkPresetManager
+        if not LandmarkPresetManager.validate_coordinates(coords.strip()):
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Invalid Format",
+                "Coordinates must be in the format:\n"
+                "(x1,y1),(x2,y2),(x3,y3),(x4,y4)\n\n"
+                "Example: (-50,60),(70,60),(-50,-60),(70,-60)\n\n"
+                "Requirements:\n"
+                "• Exactly 4 coordinate pairs\n"
+                "• Each pair in parentheses: (x,y)\n"
+                "• Pairs separated by commas\n"
+                "• Numbers can be positive/negative integers or decimals"
+            )
+            return
+
         if self.preset_manager.add_preset(name.strip(), coords.strip()):
             self._refresh_preset_list()
             self.presetsChanged.emit()
@@ -319,70 +427,25 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         else:
             QtWidgets.QMessageBox.warning(self, "Error", "Could not add preset. Name may be invalid or already exists.")
 
-    def _on_edit_preset(self):
-        """Edit selected preset's coordinates."""
-        current_item = self.preset_list.currentItem()
-        if not current_item:
-            QtWidgets.QMessageBox.information(self, "Edit Preset", "Please select a preset to edit.")
-            return
-
-        # Parse name from "Name: coords" format
-        item_text = current_item.text()
-        name = item_text.split(":")[0].strip()
-
-        if name == LandmarkPresetManager.DEFAULT_PRESET_NAME:
-            QtWidgets.QMessageBox.warning(self, "Cannot Edit", "The default preset cannot be modified.")
-            return
-
-        current_coords = self.preset_manager.get_coordinates(name)
-        coords, ok = QtWidgets.QInputDialog.getText(
-            self, "Edit Preset",
-            f"Edit coordinates for '{name}':",
-            text=current_coords
-        )
-        if ok and coords.strip():
-            if self.preset_manager.add_preset(name, coords.strip()):
-                self._refresh_preset_list()
-                self.presetsChanged.emit()
-                QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' updated!")
-
-    def _on_rename_preset(self):
-        """Rename selected preset."""
-        current_item = self.preset_list.currentItem()
-        if not current_item:
-            QtWidgets.QMessageBox.information(self, "Rename Preset", "Please select a preset to rename.")
-            return
-
-        item_text = current_item.text()
-        old_name = item_text.split(":")[0].strip()
-
-        if old_name == LandmarkPresetManager.DEFAULT_PRESET_NAME:
-            QtWidgets.QMessageBox.warning(self, "Cannot Rename", "The default preset cannot be renamed.")
-            return
-
-        new_name, ok = QtWidgets.QInputDialog.getText(
-            self, "Rename Preset", f"Rename '{old_name}' to:", text=old_name
-        )
-        if ok and new_name.strip():
-            if self.preset_manager.rename_preset(old_name, new_name.strip()):
-                self._refresh_preset_list()
-                self.presetsChanged.emit()
-                QtWidgets.QMessageBox.information(self, "Success", f"Preset renamed to '{new_name}'!")
-            else:
-                QtWidgets.QMessageBox.warning(self, "Error", "Could not rename preset. Name may already exist.")
-
     def _on_delete_preset(self):
         """Delete selected preset."""
-        current_item = self.preset_list.currentItem()
-        if not current_item:
-            QtWidgets.QMessageBox.information(self, "Delete Preset", "Please select a preset to delete.")
+        # Get list of deletable presets (exclude default)
+        all_presets = self.preset_manager.get_preset_names()
+        deletable_presets = [p for p in all_presets if p != LandmarkPresetManager.DEFAULT_PRESET_NAME]
+
+        if not deletable_presets:
+            QtWidgets.QMessageBox.information(self, "Delete Preset", "No custom presets to delete.")
             return
 
-        item_text = current_item.text()
-        name = item_text.split(":")[0].strip()
+        # Ask user to select preset to delete
+        name, ok = QtWidgets.QInputDialog.getItem(
+            self, "Delete Preset",
+            "Select preset to delete:",
+            deletable_presets,
+            0, False
+        )
 
-        if name == LandmarkPresetManager.DEFAULT_PRESET_NAME:
-            QtWidgets.QMessageBox.warning(self, "Cannot Delete", "The default preset cannot be deleted.")
+        if not ok:
             return
 
         reply = QtWidgets.QMessageBox.question(
@@ -396,18 +459,248 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
                 self.presetsChanged.emit()
                 QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' deleted!")
 
+    def _toggle_reference_image(self):
+        """Toggle visibility of the reference image and label."""
+        self.reference_visible = not self.reference_visible
+
+        if self.reference_visible:
+            self.reference_label.show()
+            self.reference_image.show()
+        else:
+            self.reference_label.hide()
+            self.reference_image.hide()
+
+
+class GDSPresetManagerWidget(QtWidgets.QGroupBox):
+    """Widget for managing GDS file presets at the bottom of the UI."""
+
+    presetsChanged = QtCore.Signal()  # Emitted when presets are added/deleted/renamed
+
+    def __init__(self, gds_manager: GDSPresetManager, parent: Optional[QtWidgets.QWidget] = None):
+        super().__init__("GDS File Preset Manager", parent)
+        self.gds_manager = gds_manager
+        self._build_ui()
+
+    def _build_ui(self):
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Instructions
+        info_label = QtWidgets.QLabel(
+            "Manage GDS file presets. Select different GDS layouts for alignment. The [Default - Test.GDS] preset uses the bundled Test.GDS file."
+        )
+        info_label.setWordWrap(True)
+        layout.addWidget(info_label)
+
+        # Preset list and controls
+        controls_layout = QtWidgets.QHBoxLayout()
+
+        # List of presets
+        list_section = QtWidgets.QVBoxLayout()
+        list_section.addWidget(QtWidgets.QLabel("Available GDS Files:"))
+
+        # Container for preset items
+        self.preset_container = QtWidgets.QWidget()
+        self.preset_layout = QtWidgets.QVBoxLayout(self.preset_container)
+        self.preset_layout.setContentsMargins(0, 0, 0, 0)
+        self.preset_layout.setSpacing(2)
+
+        # Scroll area for presets
+        scroll = QtWidgets.QScrollArea()
+        scroll.setWidget(self.preset_container)
+        scroll.setWidgetResizable(True)
+        scroll.setMaximumHeight(120)
+
+        self._refresh_preset_list()
+        list_section.addWidget(scroll)
+        controls_layout.addLayout(list_section, 2)
+
+        # Buttons
+        button_section = QtWidgets.QVBoxLayout()
+
+        self.btn_add = QtWidgets.QPushButton("Add New...")
+        self.btn_add.clicked.connect(self._on_add_preset)
+        button_section.addWidget(self.btn_add)
+
+        self.btn_delete = QtWidgets.QPushButton("Delete")
+        self.btn_delete.clicked.connect(self._on_delete_preset)
+        button_section.addWidget(self.btn_delete)
+
+        button_section.addStretch()
+        controls_layout.addLayout(button_section, 1)
+
+        layout.addLayout(controls_layout)
+
+    def _refresh_preset_list(self):
+        """Refresh the preset list display."""
+        # Clear existing items
+        while self.preset_layout.count():
+            child = self.preset_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        # Add preset items
+        for name in self.gds_manager.get_preset_names():
+            gds_path = self.gds_manager.get_gds_path(name)
+            item_text = f"{name}: {gds_path}"
+
+            # Create row for this preset
+            row = QtWidgets.QWidget()
+            row_layout = QtWidgets.QHBoxLayout(row)
+            row_layout.setContentsMargins(5, 2, 5, 2)
+            row_layout.setSpacing(5)
+
+            # Preset label
+            label = QtWidgets.QLabel(item_text)
+            label.setStyleSheet("padding: 2px;")
+            row_layout.addWidget(label, 1)
+
+            # Preview button
+            btn_preview = QtWidgets.QPushButton("Preview")
+            btn_preview.setToolTip(f"Open {gds_path} in KLayout")
+            btn_preview.setFixedWidth(80)
+            btn_preview.clicked.connect(lambda checked, path=gds_path: self._on_preview_gds(path))
+            row_layout.addWidget(btn_preview)
+
+            self.preset_layout.addWidget(row)
+
+        # Add stretch at the end
+        self.preset_layout.addStretch()
+
+    def _on_add_preset(self):
+        """Add a new GDS preset."""
+        name, ok = QtWidgets.QInputDialog.getText(
+            self, "Add GDS Preset", "Enter preset name:"
+        )
+        if not ok or not name.strip():
+            return
+
+        # File dialog to select GDS file
+        gds_path, _ = QtWidgets.QFileDialog.getOpenFileName(
+            self,
+            "Select GDS File",
+            "",
+            "GDS Files (*.gds *.GDS);;All Files (*.*)"
+        )
+        if not gds_path:
+            return
+
+        if self.gds_manager.add_preset(name.strip(), gds_path):
+            self._refresh_preset_list()
+            self.presetsChanged.emit()
+            QtWidgets.QMessageBox.information(self, "Success", f"GDS preset '{name}' added!")
+        else:
+            QtWidgets.QMessageBox.warning(self, "Error", "Could not add preset. Name may be invalid or already exists.")
+
+    def _on_delete_preset(self):
+        """Delete selected preset."""
+        # Get list of deletable presets (exclude default)
+        all_presets = self.gds_manager.get_preset_names()
+        deletable_presets = [p for p in all_presets if p != GDSPresetManager.DEFAULT_PRESET_NAME]
+
+        if not deletable_presets:
+            QtWidgets.QMessageBox.information(self, "Delete Preset", "No custom GDS presets to delete.")
+            return
+
+        # Ask user to select preset to delete
+        name, ok = QtWidgets.QInputDialog.getItem(
+            self, "Delete Preset",
+            "Select GDS preset to delete:",
+            deletable_presets,
+            0, False
+        )
+
+        if not ok:
+            return
+
+        reply = QtWidgets.QMessageBox.question(
+            self, "Confirm Delete",
+            f"Are you sure you want to delete GDS preset '{name}'?",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+        )
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+            if self.gds_manager.delete_preset(name):
+                self._refresh_preset_list()
+                self.presetsChanged.emit()
+                QtWidgets.QMessageBox.information(self, "Success", f"GDS preset '{name}' deleted!")
+
+    def _on_preview_gds(self, gds_path: str):
+        """Open GDS file in KLayout for preview."""
+        import subprocess
+        import sys
+        from pathlib import Path
+
+        # Resolve relative paths to absolute
+        if not Path(gds_path).is_absolute():
+            # Try relative to project directory
+            project_root = Path(__file__).parent.parent
+            full_path = project_root / gds_path
+            if not full_path.exists():
+                # Try relative to current working directory
+                full_path = Path(gds_path).resolve()
+        else:
+            full_path = Path(gds_path)
+
+        if not full_path.exists():
+            QtWidgets.QMessageBox.warning(
+                self, "File Not Found",
+                f"GDS file not found: {gds_path}\n\nFull path tried: {full_path}"
+            )
+            return
+
+        # Try to find KLayout executable
+        klayout_candidates = [
+            r"C:\Program Files\KLayout\klayout_app.exe",
+            r"C:\Program Files (x86)\KLayout\klayout_app.exe",
+            "klayout",  # If in PATH
+        ]
+
+        klayout_exe = None
+        for candidate in klayout_candidates:
+            try:
+                result = subprocess.run([candidate, "-v"], capture_output=True, timeout=2)
+                if result.returncode == 0:
+                    klayout_exe = candidate
+                    break
+            except (FileNotFoundError, subprocess.TimeoutExpired):
+                continue
+
+        if not klayout_exe:
+            QtWidgets.QMessageBox.warning(
+                self, "KLayout Not Found",
+                "Could not find KLayout installation.\n\n"
+                "Please ensure KLayout is installed at:\n"
+                "C:\\Program Files\\KLayout\\klayout_app.exe\n\n"
+                "Or add KLayout to your system PATH."
+            )
+            return
+
+        # Launch KLayout with the GDS file
+        try:
+            subprocess.Popen([klayout_exe, str(full_path)])
+            QtWidgets.QMessageBox.information(
+                self, "Preview Opened",
+                f"Opening {full_path.name} in KLayout..."
+            )
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self, "Error",
+                f"Failed to open KLayout:\n{e}"
+            )
+
 
 class SessionWidget(QtWidgets.QGroupBox):
     """Widget representing a single .LYS session with its images."""
 
     runRequested = QtCore.Signal(list)  # emits argv list for this session
     deleteRequested = QtCore.Signal(object)  # emits self when delete is requested
+    closeRequested = QtCore.Signal(object)  # emits self when close is requested
 
-    def __init__(self, session_name: str, lys_path: Optional[Path], preset_manager: LandmarkPresetManager, parent: Optional[QtWidgets.QWidget] = None):
+    def __init__(self, session_name: str, lys_path: Optional[Path], preset_manager: LandmarkPresetManager, gds_manager: GDSPresetManager, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(session_name, parent)
         self.session_name = session_name
         self.lys_path = lys_path
         self.preset_manager = preset_manager
+        self.gds_manager = gds_manager
         self.image_strips: Dict[str, ImageStripWidget] = {}  # path -> widget
 
         # Don't use checkable GroupBox - it disables all children when unchecked
@@ -424,7 +717,7 @@ class SessionWidget(QtWidgets.QGroupBox):
         """Build UI for this session."""
         layout = QtWidgets.QVBoxLayout(self)
 
-        # Control row: Add button, Select All, Clear, Run Selected
+        # Control row: Add button, Select All, Clear, Pick Selected
         controls_row = QtWidgets.QHBoxLayout()
 
         self.btn_add = QtWidgets.QPushButton("Add Images...")
@@ -440,28 +733,58 @@ class SessionWidget(QtWidgets.QGroupBox):
 
         controls_row.addStretch(1)
 
-        self.lbl_clear = QtWidgets.QLabel('<a href="#">Clear List</a>')
-        self.lbl_clear.setToolTip("Remove all images from this session")
-        self.lbl_clear.linkActivated.connect(self.clear_list)
-        controls_row.addWidget(self.lbl_clear)
+        self.btn_remove_selected = QtWidgets.QPushButton("Remove Selected")
+        self.btn_remove_selected.setToolTip("Remove selected images from this session")
+        self.btn_remove_selected.setEnabled(False)
+        self.btn_remove_selected.clicked.connect(self._on_remove_selected)
+        controls_row.addWidget(self.btn_remove_selected)
 
-        self.btn_run_selected = QtWidgets.QPushButton("Run Selected ▶")
-        self.btn_run_selected.setToolTip("Align all selected images in this session")
+        self.btn_run_selected = QtWidgets.QPushButton("Pick Selected")
+        self.btn_run_selected.setToolTip("Pick points for all selected images in this session")
         self.btn_run_selected.setEnabled(False)
         self.btn_run_selected.clicked.connect(self._on_run_selected)
         controls_row.addWidget(self.btn_run_selected)
 
+        # Open in KLayout button
+        self.btn_open_klayout = QtWidgets.QPushButton("📐 Open in KLayout")
+        self.btn_open_klayout.setToolTip("Open this session's .lys file in KLayout")
+        self.btn_open_klayout.clicked.connect(self._on_open_in_klayout)
+        controls_row.addWidget(self.btn_open_klayout)
+
         # Add separator
         controls_row.addSpacing(16)
 
-        # Delete session button
+        # Close session button (removes from interface, keeps file)
+        self.btn_close_session = QtWidgets.QPushButton("Close Session")
+        self.btn_close_session.setToolTip("Close this session (removes from interface, keeps .lys file on Desktop)")
+        self.btn_close_session.clicked.connect(self._on_close_session)
+        controls_row.addWidget(self.btn_close_session)
+
+        # Delete session button (removes from interface AND deletes file)
         self.btn_delete_session = QtWidgets.QPushButton("🗑️ Delete Session")
-        self.btn_delete_session.setToolTip("Delete this entire session")
+        self.btn_delete_session.setToolTip("Delete this entire session and remove .lys file from Desktop")
         self.btn_delete_session.setStyleSheet("color: #c00; font-weight: bold;")
         self.btn_delete_session.clicked.connect(self._on_delete_session)
         controls_row.addWidget(self.btn_delete_session)
 
         layout.addLayout(controls_row)
+
+        # GDS selection row
+        gds_row = QtWidgets.QHBoxLayout()
+        gds_label = QtWidgets.QLabel("GDS File:")
+        gds_label.setStyleSheet("font-weight: bold;")
+        gds_row.addWidget(gds_label)
+
+        self.gds_combo = QtWidgets.QComboBox()
+        self.gds_combo.setToolTip("Select which GDS file to use for alignment in this session")
+        self.gds_combo.addItems(self.gds_manager.get_preset_names())
+        # Default to the first preset (which is [Default - Test.GDS])
+        self.gds_combo.setCurrentIndex(0)
+        gds_row.addWidget(self.gds_combo, 1)
+
+        gds_row.addStretch(3)
+
+        layout.addLayout(gds_row)
 
         # Container for image strips (no scroll area - let session grow naturally)
         self.image_container = QtWidgets.QWidget()
@@ -494,6 +817,7 @@ class SessionWidget(QtWidgets.QGroupBox):
         if self.image_strips:
             self.chk_select_all.setEnabled(True)
             self.btn_run_selected.setEnabled(True)
+            self.btn_remove_selected.setEnabled(True)
 
     def clear_list(self, *_):
         """Remove all image strips from this session."""
@@ -504,6 +828,7 @@ class SessionWidget(QtWidgets.QGroupBox):
         self.chk_select_all.setChecked(False)
         self.chk_select_all.setEnabled(False)
         self.btn_run_selected.setEnabled(False)
+        self.btn_remove_selected.setEnabled(False)
 
     def _load_images_from_lys(self):
         """Load image paths from an existing LYS file."""
@@ -511,9 +836,10 @@ class SessionWidget(QtWidgets.QGroupBox):
             return
 
         try:
-            from klayout_point_align.lys_io import extract_image_paths_from_lys
+            from klayout_point_align.lys_io import extract_image_paths_from_lys, extract_alignment_metadata_from_lys
 
             image_paths = extract_image_paths_from_lys(str(self.lys_path))
+            alignment_metadata = extract_alignment_metadata_from_lys(str(self.lys_path))
             preset_names = self.preset_manager.get_preset_names()
 
             for img_path in image_paths:
@@ -528,6 +854,11 @@ class SessionWidget(QtWidgets.QGroupBox):
                     strip.alignRequested.connect(self._on_single_align)
                     strip.checkStateChanged.connect(self._on_strip_check_changed)
 
+                    # If alignment metadata exists for this image, set the coordinates
+                    if img_path in alignment_metadata:
+                        coords_str = alignment_metadata[img_path]
+                        strip.set_coordinates(coords_str)
+
                     # Add to layout (before the stretch)
                     self.image_layout.insertWidget(self.image_layout.count() - 1, strip)
                     self.image_strips[img_path] = strip
@@ -536,6 +867,7 @@ class SessionWidget(QtWidgets.QGroupBox):
             if self.image_strips:
                 self.chk_select_all.setEnabled(True)
                 self.btn_run_selected.setEnabled(True)
+                self.btn_remove_selected.setEnabled(True)
 
         except Exception as e:
             QtWidgets.QMessageBox.warning(
@@ -544,18 +876,125 @@ class SessionWidget(QtWidgets.QGroupBox):
                 f"Failed to load images from LYS file:\n{str(e)}"
             )
 
+    def _on_open_in_klayout(self):
+        """Open this session's .lys file in KLayout."""
+        import subprocess
+        import os
+        import xml.etree.ElementTree as ET
+
+        # Get the .lys file path
+        if self.lys_path and self.lys_path.exists():
+            lys_file = self.lys_path
+        else:
+            # Try Desktop location
+            lys_file = Path.home() / "Desktop" / self.session_name
+            if not lys_file.exists():
+                QtWidgets.QMessageBox.warning(
+                    self,
+                    "File Not Found",
+                    f"Could not find .lys file:\n{lys_file}\n\nMake sure the session has been saved."
+                )
+                return
+
+        # Update the GDS file path in the .lys file before opening
+        try:
+            selected_gds = self.get_selected_gds_path()
+
+            # Parse the .lys file
+            tree = ET.parse(str(lys_file))
+            root = tree.getroot()
+
+            # Find and update the GDS file path
+            # Look for <layout><file-path> element
+            for layout_elem in root.findall('.//layout'):
+                file_path_elem = layout_elem.find('file-path')
+                if file_path_elem is not None:
+                    file_path_elem.text = selected_gds
+
+            # Write back to file
+            tree.write(str(lys_file), encoding='utf-8', xml_declaration=True)
+
+        except Exception as e:
+            # Log the error but continue - the file might not have a GDS reference yet
+            from diagnostic_logger import get_logger
+            logger = get_logger()
+            logger.warning(f"Could not update GDS path in .lys file: {e}")
+
+        # Open with default application (should be KLayout if .lys is associated)
+        try:
+            os.startfile(str(lys_file))
+        except Exception as e:
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Error Opening File",
+                f"Failed to open .lys file:\n{str(e)}\n\n"
+                f"Make sure KLayout is installed and associated with .lys files."
+            )
+
+    def _on_close_session(self):
+        """Handle close session button click - removes from interface but keeps file."""
+        reply = QtWidgets.QMessageBox.question(
+            self,
+            "Close Session?",
+            f"Close this session?\n\n{self.session_name}\n\nThe session will be removed from the interface, but the .lys file will remain on your Desktop.",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.Cancel,
+            QtWidgets.QMessageBox.StandardButton.Cancel
+        )
+
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
+            self.closeRequested.emit(self)
+
     def _on_delete_session(self):
-        """Handle delete session button click."""
+        """Handle delete session button click - removes from interface AND deletes file."""
         reply = QtWidgets.QMessageBox.question(
             self,
             "Delete Session?",
-            f"Are you sure you want to delete this session?\n\n{self.session_name}\n\nThis will remove the session and all its images from the interface.",
-            QtWidgets.QMessageBox.Yes | QtWidgets.QMessageBox.Cancel,
-            QtWidgets.QMessageBox.Cancel
+            f"Are you sure you want to delete this session?\n\n{self.session_name}\n\nThis will remove the session from the interface AND delete the .lys file from your Desktop.",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.Cancel,
+            QtWidgets.QMessageBox.StandardButton.Cancel
         )
 
-        if reply == QtWidgets.QMessageBox.Yes:
+        if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             self.deleteRequested.emit(self)
+
+    def update_gds_presets(self, gds_preset_names: List[str]):
+        """Update the GDS dropdown when presets change."""
+        current_selection = self.gds_combo.currentText()
+        self.gds_combo.clear()
+        self.gds_combo.addItems(gds_preset_names)
+
+        # Try to restore previous selection, otherwise default to first item
+        index = self.gds_combo.findText(current_selection)
+        if index >= 0:
+            self.gds_combo.setCurrentIndex(index)
+        else:
+            self.gds_combo.setCurrentIndex(0)
+
+    def get_selected_gds_path(self) -> str:
+        """Get the GDS file path for the currently selected preset."""
+        from gui.runner import resource_path
+        preset_name = self.gds_combo.currentText()
+        gds_path = self.gds_manager.get_gds_path(preset_name)
+
+        # Resolve to absolute path
+        if not Path(gds_path).is_absolute():
+            # Try as bundled resource first
+            resolved = resource_path(gds_path)
+            if resolved.exists():
+                return str(resolved)
+            # Otherwise return as-is (user might have provided absolute path)
+        return gds_path
+
+    def has_unaligned_images(self) -> bool:
+        """Check if this session has any images without picked coordinates."""
+        for strip in self.image_strips.values():
+            if not strip.selected_coordinates:
+                return True
+        return False
+
+    def count_unaligned_images(self) -> int:
+        """Count how many images don't have picked coordinates."""
+        return sum(1 for strip in self.image_strips.values() if not strip.selected_coordinates)
 
     def selected_images(self) -> List[str]:
         """Return only checked image paths."""
@@ -657,9 +1096,114 @@ class SessionWidget(QtWidgets.QGroupBox):
         # Always save to Desktop with session name (no prompt)
         output_file = str(Path.home() / "Desktop" / self.session_name)
 
-        # Build argv for batch (now uses per-image presets)
-        argv = self._build_argv_for_batch(selected, output_file)
-        self.runRequested.emit(argv)
+        # Since we already have the picked coordinates, call alignment function directly
+        # instead of using the batch runner (which doesn't support --before)
+        try:
+            print(f"DEBUG: Starting alignment for {len(selected)} images")
+            from klayout_point_align import align_markers, AlignConfig
+            from klayout_point_align.lys_io import reset_z_counter
+
+            # Reset z-counter for layering images in KLayout
+            reset_z_counter()
+
+            # For the first image, use the template; for subsequent images, use the output file
+            current_lys_in = str(resource_path("Test_with_img.lys"))
+
+            # Process each image with its picked coordinates
+            for idx, img_path in enumerate(selected):
+                strip = self.image_strips.get(img_path)
+                if not strip or not strip.selected_coordinates:
+                    continue  # Skip images without coordinates
+
+                # Parse coordinates using optimized regex parser
+                coords_str = strip.selected_coordinates
+                picked_points = parse_coordinates(coords_str)
+
+                # Get landmark coordinates for this image's preset
+                preset = strip.get_landmark_preset()
+                landmark_coords_str = self.preset_manager.get_coordinates(preset)
+                target_points = parse_coordinates(landmark_coords_str)
+
+                # Create configuration
+                cfg = AlignConfig(
+                    after_pts_um=target_points,
+                    affine_only=True,
+                    rms_thresh_um=0.5,
+                    after_origin_um=(0.0, 0.0)
+                )
+
+                # Run alignment
+                align_markers(
+                    before_ctr_px=picked_points,
+                    cfg=cfg,
+                    lys_in=current_lys_in,
+                    lys_out=output_file,
+                    image_file=img_path,
+                    gds_file=self.get_selected_gds_path()
+                )
+
+                # After first image, use the output file as input for subsequent images
+                current_lys_in = output_file
+
+            # Trigger wave animation on successful alignment
+            if hasattr(self, 'wave_widget') and self.wave_widget:
+                print("DEBUG: Triggering wave animation")
+                self.wave_widget.trigger_alignment_animation()
+            else:
+                print("DEBUG: Wave widget not found or not set")
+
+            QtWidgets.QMessageBox.information(
+                self, "Alignment Complete",
+                f"Successfully aligned {len(selected)} image(s).\n\nOutput: {output_file}"
+            )
+
+        except Exception as e:
+            logger.log_exception(e, "running alignment")
+            QtWidgets.QMessageBox.critical(
+                self, "Alignment Error",
+                f"Failed to run alignment:\n{str(e)}"
+            )
+
+    def _on_remove_selected(self):
+        """Remove selected images from this session."""
+        selected = self.selected_images()
+
+        if not selected:
+            QtWidgets.QMessageBox.information(self, "No Selection",
+                "Please select at least one image to remove.")
+            return
+
+        # Confirm removal
+        count = len(selected)
+        plural = "image" if count == 1 else "images"
+        reply = QtWidgets.QMessageBox.question(
+            self, "Remove Images?",
+            f"Remove {count} selected {plural} from this session?",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.Cancel,
+            QtWidgets.QMessageBox.StandardButton.Cancel
+        )
+
+        if reply != QtWidgets.QMessageBox.StandardButton.Yes:
+            return
+
+        # Remove the selected strips
+        for img_path in selected:
+            strip = self.image_strips.get(img_path)
+            if strip:
+                self.image_layout.removeWidget(strip)
+                strip.deleteLater()
+                del self.image_strips[img_path]
+
+        # Update UI state
+        if not self.image_strips:
+            # No images left - disable all buttons
+            self.chk_select_all.setChecked(False)
+            self.chk_select_all.setEnabled(False)
+            self.btn_run_selected.setEnabled(False)
+            self.btn_remove_selected.setEnabled(False)
+        else:
+            # Still have images - update select all state
+            self.chk_select_all.setChecked(False)
 
     def _build_argv_for_single(self, image_path: str, landmark_coords: str, output_file: str) -> list:
         """Build command arguments for single image alignment - includes ALL images in session."""
@@ -673,18 +1217,11 @@ class SessionWidget(QtWidgets.QGroupBox):
             "--affine",
             "--combined-out", output_file,
             "--auto-review",
-            "--gds-file", str(resource_path("Test.GDS"))
+            "--gds-file", self.get_selected_gds_path()
         ]
 
-        # Add before coordinates for each image (empty string for unpicked images)
-        for img in all_images:
-            strip = self.image_strips.get(img)
-            if strip and strip.selected_coordinates:
-                argv.extend(["--before", strip.selected_coordinates])
-            else:
-                # For unpicked images, provide dummy tiny coordinates
-                # This will make them show up as tiny placeholders
-                argv.extend(["--before", "(0,0),(0.1,0),(0,0.1),(0.1,0.1)"])
+        # Note: --auto-review will launch the GUI picker for each image
+        # The batch runner doesn't support --before arguments
 
         return argv
 
@@ -714,15 +1251,13 @@ class SessionWidget(QtWidgets.QGroupBox):
             "--after", landmark_coords,
             "--affine",
             "--combined-out", output_file,
-            "--auto-review",
-            "--gds-file", str(resource_path("Test.GDS"))
+            "--gds-file", self.get_selected_gds_path()
         ])
 
-        # Add before coordinates for each image
-        for img_path in image_paths:
-            strip = self.image_strips.get(img_path)
-            if strip and strip.selected_coordinates:
-                argv.extend(["--before", strip.selected_coordinates])
+        # Note: The batch runner script doesn't support --before arguments.
+        # We use --auto mode which will automatically detect fiducials on the images.
+        # If automatic detection fails, it will use the --after coordinates as fallback.
+        argv.append("--auto")
 
         return argv
 
@@ -767,6 +1302,10 @@ class AlignTab(QtWidgets.QWidget):
         # Initialize preset manager
         self.preset_manager = LandmarkPresetManager(self._landmarks_file)
 
+        # Initialize GDS preset manager
+        self._gds_presets_file = Path(__file__).parent.parent / "gds_presets.json"
+        self.gds_manager = GDSPresetManager(self._gds_presets_file)
+
         # Load preferences BEFORE building UI (so counter is restored before first session)
         self._load_preferences()
         self._build_ui()
@@ -805,10 +1344,18 @@ class AlignTab(QtWidgets.QWidget):
 
         layout.addWidget(self.sessions_container)  # No stretch factor - natural height
 
-        # ===== SECTION 2: PRESET MANAGER (BOTTOM) =====
+        # ===== SECTION 2: PRESET MANAGERS (BOTTOM) =====
         self.preset_widget = PresetManagerWidget(self.preset_manager, self)
         self.preset_widget.presetsChanged.connect(self._on_presets_changed)
-        layout.addWidget(self.preset_widget, 1)  # Stretch factor 1
+        layout.addWidget(self.preset_widget, 0)  # No stretch - natural size
+
+        # GDS Preset Manager (below landmark manager)
+        self.gds_widget = GDSPresetManagerWidget(self.gds_manager, self)
+        self.gds_widget.presetsChanged.connect(self._on_gds_presets_changed)
+        layout.addWidget(self.gds_widget, 0)  # No stretch - natural size
+
+        # Add stretch to push preset managers to natural size
+        layout.addStretch(1)
 
         # Create first default session
         self._create_new_session()
@@ -826,11 +1373,12 @@ class AlignTab(QtWidgets.QWidget):
             hostname = "UnknownPC"
 
         session_name = f"Aligned{self._session_counter}By{hostname}.lys"
-        session = SessionWidget(session_name, None, self.preset_manager, self)
+        session = SessionWidget(session_name, None, self.preset_manager, self.gds_manager, self)
 
         # Wire up the session's signals
         session.runRequested.connect(self._on_session_run_requested)
         session.deleteRequested.connect(self._on_session_delete_requested)
+        session.closeRequested.connect(self._on_session_close_requested)
 
         # Add to layout (before the stretch)
         self.sessions_layout.insertWidget(self.sessions_layout.count() - 1, session)
@@ -843,10 +1391,26 @@ class AlignTab(QtWidgets.QWidget):
         desktop_path = Path.home() / "Desktop" / session_name
         template_path = Path(__file__).parent.parent / "Test_with_img.lys"
         try:
+            import xml.etree.ElementTree as ET
+
             # Copy template to Desktop
             shutil.copy(template_path, desktop_path)
+
+            # Update the GDS file path in the copied .lys file to match the session's selected GDS
+            selected_gds = session.get_selected_gds_path()
+            tree = ET.parse(str(desktop_path))
+            root = tree.getroot()
+
+            # Find and update the GDS file path
+            for layout_elem in root.findall('.//layout'):
+                file_path_elem = layout_elem.find('file-path')
+                if file_path_elem is not None:
+                    file_path_elem.text = selected_gds
+
+            # Write back to file
+            tree.write(str(desktop_path), encoding='utf-8', xml_declaration=True)
         except Exception as e:
-            print(f"Warning: Could not create {desktop_path}: {e}")
+            print(f"Warning: Could not create/update {desktop_path}: {e}")
 
     def _open_existing_session(self):
         """Open an existing .LYS file as a new session."""
@@ -858,11 +1422,12 @@ class AlignTab(QtWidgets.QWidget):
 
         lys_path = Path(path)
         session_name = lys_path.name
-        session = SessionWidget(session_name, lys_path, self.preset_manager, self)
+        session = SessionWidget(session_name, lys_path, self.preset_manager, self.gds_manager, self)
 
         # Wire up the session's signals
         session.runRequested.connect(self._on_session_run_requested)
         session.deleteRequested.connect(self._on_session_delete_requested)
+        session.closeRequested.connect(self._on_session_close_requested)
 
         # Add to layout (before the stretch)
         self.sessions_layout.insertWidget(self.sessions_layout.count() - 1, session)
@@ -872,8 +1437,20 @@ class AlignTab(QtWidgets.QWidget):
         """Forward session run request to main window."""
         self.runRequested.emit(argv)
 
+    def _on_session_close_requested(self, session: SessionWidget):
+        """Handle session close request - remove from interface, keep file."""
+        # Remove from layout
+        self.sessions_layout.removeWidget(session)
+
+        # Remove from list
+        if session in self.sessions:
+            self.sessions.remove(session)
+
+        # Delete the widget
+        session.deleteLater()
+
     def _on_session_delete_requested(self, session: SessionWidget):
-        """Handle session deletion request."""
+        """Handle session deletion request - remove from interface AND delete file."""
         # Delete .lys file from Desktop
         desktop_path = Path.home() / "Desktop" / session.session_name
         try:
@@ -898,6 +1475,12 @@ class AlignTab(QtWidgets.QWidget):
         for session in self.sessions:
             for strip in session.image_strips.values():
                 strip.update_presets(preset_names)
+
+    def _on_gds_presets_changed(self):
+        """Handle GDS preset manager changes - update all sessions."""
+        gds_preset_names = self.gds_manager.get_preset_names()
+        for session in self.sessions:
+            session.update_gds_presets(gds_preset_names)
 
     def show_debug_window(self):
         """Show the debug window."""
@@ -1049,6 +1632,7 @@ class AlignTab(QtWidgets.QWidget):
         if self.image_strips:
             self.chk_select_all.setEnabled(True)
             self.btn_run_selected.setEnabled(True)
+            self.btn_remove_selected.setEnabled(True)
 
     def clear_list(self, *_):
         # Remove all image strips
@@ -1199,15 +1783,6 @@ class AlignTab(QtWidgets.QWidget):
 
         logger.info(f"Emitting batch run request for {len(selected)} images")
         self.runRequested.emit(argv)
-
-    def _on_presets_changed(self):
-        """Handle preset manager changes - update all strip dropdowns."""
-        logger = get_logger()
-        preset_names = self.preset_manager.get_preset_names()
-        logger.info(f"Presets changed, updating {len(self.image_strips)} strips")
-
-        for strip in self.image_strips.values():
-            strip.update_presets(preset_names)
 
     def _on_single_align(self, image_path: str, landmark_preset: str, output_file: str):
         """Handle individual image Run button - align one image."""
@@ -1645,3 +2220,28 @@ class AlignTab(QtWidgets.QWidget):
         """Enable/disable delete button based on current selection."""
         current = self.combo_presets.currentText()
         self.btn_delete_preset.setEnabled(current != "[Default]" and current != "")
+
+    def has_unaligned_images(self) -> bool:
+        """Check if any session has unaligned images."""
+        for session in self.sessions:
+            if session.has_unaligned_images():
+                return True
+        return False
+
+    def get_unaligned_summary(self) -> str:
+        """Get a summary of unaligned images across all sessions."""
+        unaligned_sessions = []
+        for session in self.sessions:
+            count = session.count_unaligned_images()
+            if count > 0:
+                unaligned_sessions.append((session.session_name, count))
+
+        if not unaligned_sessions:
+            return ""
+
+        lines = ["The following sessions have unaligned images:\n"]
+        for session_name, count in unaligned_sessions:
+            plural = "image" if count == 1 else "images"
+            lines.append(f"  • {session_name}: {count} {plural} without coordinates")
+
+        return "\n".join(lines)

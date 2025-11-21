@@ -1,52 +1,52 @@
 """
-Landmark Preset Management
-Handles saving/loading/managing GDS landmark coordinate presets.
+GDS Preset Management
+Handles saving/loading/managing GDS file presets.
 """
 
 import json
 from pathlib import Path
 from typing import Dict, List
 
-class LandmarkPresetManager:
-    """Manages landmark presets stored in a JSON file."""
+class GDSPresetManager:
+    """Manages GDS file presets stored in a JSON file."""
 
-    DEFAULT_PRESET_NAME = "[Default]"
-    DEFAULT_COORDINATES = "(-50,60),(70,60),(-50,-60),(70,-60)"
+    DEFAULT_PRESET_NAME = "[Default - Test.GDS]"
+    DEFAULT_GDS_PATH = "Test.GDS"
 
     def __init__(self, presets_file: Path = None):
         if presets_file is None:
-            presets_file = Path(__file__).parent / "landmark_presets.json"
+            presets_file = Path(__file__).parent / "gds_presets.json"
         self.presets_file = presets_file
-        self.presets: Dict[str, str] = {}
+        self.presets: Dict[str, str] = {}  # name -> file_path
         self.load()
 
     def load(self):
         """Load presets from file."""
         # Always include default preset
-        self.presets = {self.DEFAULT_PRESET_NAME: self.DEFAULT_COORDINATES}
+        self.presets = {self.DEFAULT_PRESET_NAME: self.DEFAULT_GDS_PATH}
 
         if self.presets_file.exists():
             try:
                 with open(self.presets_file, 'r') as f:
                     data = json.load(f)
                     # Merge loaded presets with default
-                    for name, coords in data.items():
+                    for name, path in data.items():
                         if name != self.DEFAULT_PRESET_NAME:  # Don't override default
-                            self.presets[name] = coords
+                            self.presets[name] = path
             except Exception as e:
-                print(f"Warning: Could not load landmark presets: {e}")
+                print(f"Warning: Could not load GDS presets: {e}")
 
     def save(self):
         """Save presets to file."""
         try:
             # Save all presets except the default one
-            save_data = {name: coords for name, coords in self.presets.items()
+            save_data = {name: path for name, path in self.presets.items()
                         if name != self.DEFAULT_PRESET_NAME}
 
             with open(self.presets_file, 'w') as f:
                 json.dump(save_data, f, indent=2)
         except Exception as e:
-            print(f"Error saving landmark presets: {e}")
+            print(f"Error saving GDS presets: {e}")
 
     def get_preset_names(self) -> List[str]:
         """Get list of all preset names."""
@@ -56,11 +56,11 @@ class LandmarkPresetManager:
                      if name != self.DEFAULT_PRESET_NAME])
         return names
 
-    def get_coordinates(self, preset_name: str) -> str:
-        """Get coordinates for a preset name."""
-        return self.presets.get(preset_name, self.DEFAULT_COORDINATES)
+    def get_gds_path(self, preset_name: str) -> str:
+        """Get GDS file path for a preset name."""
+        return self.presets.get(preset_name, self.DEFAULT_GDS_PATH)
 
-    def add_preset(self, name: str, coordinates: str) -> bool:
+    def add_preset(self, name: str, gds_path: str) -> bool:
         """Add or update a preset. Returns True if successful."""
         if name == self.DEFAULT_PRESET_NAME:
             return False  # Cannot modify default
@@ -68,31 +68,10 @@ class LandmarkPresetManager:
         if not name.strip():
             return False  # Empty name not allowed
 
-        # Validate coordinate format
-        if not self.validate_coordinates(coordinates):
-            return False
-
-        self.presets[name] = coordinates
+        # Store the GDS file path
+        self.presets[name] = gds_path
         self.save()
         return True
-
-    @staticmethod
-    def validate_coordinates(coords: str) -> bool:
-        """
-        Validate that coordinates are in the correct format.
-        Expected: (x1,y1),(x2,y2),(x3,y3),(x4,y4)
-        Returns True if valid, False otherwise.
-        """
-        import re
-
-        # Remove all whitespace for easier parsing
-        coords_clean = coords.replace(" ", "")
-
-        # Pattern: exactly 4 coordinate pairs like (num,num),(num,num),(num,num),(num,num)
-        # Numbers can be integers or floats, positive or negative
-        pattern = r'^\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\),\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\),\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\),\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\)$'
-
-        return bool(re.match(pattern, coords_clean))
 
     def delete_preset(self, name: str) -> bool:
         """Delete a preset. Returns True if successful."""
