@@ -330,7 +330,7 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         self.reference_image.setScaledContents(True)
 
         # Load reference image
-        reference_path = Path(__file__).parent.parent / "example_points_for_manual.png"
+        reference_path = resource_path("example_points_for_manual.png")
         if reference_path.exists():
             pixmap = QtGui.QPixmap(str(reference_path))
             if not pixmap.isNull():
@@ -648,20 +648,26 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
             return
 
         # Try to find KLayout executable
+        import shutil
+
         klayout_candidates = [
             r"C:\Program Files\KLayout\klayout_app.exe",
             r"C:\Program Files (x86)\KLayout\klayout_app.exe",
-            "klayout",  # If in PATH
+            shutil.which("klayout_app.exe"),  # Search PATH
+            shutil.which("klayout"),  # Search PATH (alternative name)
         ]
 
         klayout_exe = None
         for candidate in klayout_candidates:
+            if candidate is None:
+                continue
+
+            # Just check if the file exists (don't run it)
             try:
-                result = subprocess.run([candidate, "-v"], capture_output=True, timeout=2)
-                if result.returncode == 0:
+                if Path(candidate).exists():
                     klayout_exe = candidate
                     break
-            except (FileNotFoundError, subprocess.TimeoutExpired):
+            except:
                 continue
 
         if not klayout_exe:
@@ -780,6 +786,7 @@ class SessionWidget(QtWidgets.QGroupBox):
         self.gds_combo.addItems(self.gds_manager.get_preset_names())
         # Default to the first preset (which is [Default - Test.GDS])
         self.gds_combo.setCurrentIndex(0)
+        self.gds_combo.currentTextChanged.connect(self._on_gds_changed)
         gds_row.addWidget(self.gds_combo, 1)
 
         gds_row.addStretch(3)
@@ -957,8 +964,44 @@ class SessionWidget(QtWidgets.QGroupBox):
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             self.deleteRequested.emit(self)
 
+    def _on_gds_changed(self):
+        """Handle GDS dropdown change - update the .lys file with new GDS path."""
+        import xml.etree.ElementTree as ET
+        from diagnostic_logger import get_logger
+        logger = get_logger()
+
+        # Get the desktop path for this session
+        desktop_path = Path.home() / "Desktop" / self.session_name
+
+        # Only update if the .lys file exists
+        if not desktop_path.exists():
+            return
+
+        try:
+            # Get the newly selected GDS path
+            selected_gds = self.get_selected_gds_path()
+
+            # Parse the .lys file
+            tree = ET.parse(str(desktop_path))
+            root = tree.getroot()
+
+            # Find and update the GDS file path
+            for layout_elem in root.findall('.//layout'):
+                file_path_elem = layout_elem.find('file-path')
+                if file_path_elem is not None:
+                    file_path_elem.text = selected_gds
+
+            # Write back to file
+            tree.write(str(desktop_path), encoding='utf-8', xml_declaration=True)
+            logger.info(f"Updated GDS file in {self.session_name} to: {selected_gds}")
+        except Exception as e:
+            logger.log_exception(e, f"updating GDS file in {self.session_name}")
+
     def update_gds_presets(self, gds_preset_names: List[str]):
         """Update the GDS dropdown when presets change."""
+        # Temporarily disconnect signal to avoid triggering GDS update during refresh
+        self.gds_combo.currentTextChanged.disconnect(self._on_gds_changed)
+
         current_selection = self.gds_combo.currentText()
         self.gds_combo.clear()
         self.gds_combo.addItems(gds_preset_names)
@@ -969,6 +1012,9 @@ class SessionWidget(QtWidgets.QGroupBox):
             self.gds_combo.setCurrentIndex(index)
         else:
             self.gds_combo.setCurrentIndex(0)
+
+        # Reconnect signal
+        self.gds_combo.currentTextChanged.connect(self._on_gds_changed)
 
     def get_selected_gds_path(self) -> str:
         """Get the GDS file path for the currently selected preset."""
@@ -1059,10 +1105,10 @@ class SessionWidget(QtWidgets.QGroupBox):
                 "Please select at least one image to align.")
             return
 
-        # Launch picker for images without coordinates
+        # Launch picker for selected images
         for img_path in selected:
             strip = self.image_strips.get(img_path)
-            if strip and not strip.selected_coordinates:
+            if strip:
                 # Auto-launch picker for this image
                 try:
                     from klayout_point_align.picker import pick_points_gui
@@ -1357,22 +1403,19 @@ class AlignTab(QtWidgets.QWidget):
         # Add stretch to push preset managers to natural size
         layout.addStretch(1)
 
-        # Create first default session
-        self._create_new_session()
-
     def _create_new_session(self):
         """Create a new session with auto-generated name."""
-        import socket
+        import getpass
         import shutil
         self._session_counter += 1
 
-        # Get computer hostname (e.g., "DESKTOP-ABC123")
+        # Get username (e.g., "Dylan", "John", etc.)
         try:
-            hostname = socket.gethostname()
+            username = getpass.getuser()
         except:
-            hostname = "UnknownPC"
+            username = "User"
 
-        session_name = f"Aligned{self._session_counter}By{hostname}.lys"
+        session_name = f"Aligned{self._session_counter}By{username}.lys"
         session = SessionWidget(session_name, None, self.preset_manager, self.gds_manager, self)
 
         # Wire up the session's signals

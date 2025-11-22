@@ -12,27 +12,29 @@ import logging
 class DiagnosticLogger:
     """Enhanced logging system for debugging across different user environments."""
 
-    def __init__(self, log_dir: Optional[Path] = None):
+    def __init__(self, log_dir: Optional[Path] = None, enable_file_logging: bool = False):
         self.log_dir = log_dir or Path.cwd()
         self.log_file = self.log_dir / "PointAlign_debug.log"
         self.verbose = False
+        self.file_logging_enabled = enable_file_logging
 
         # Set up file and console logging
         self.logger = logging.getLogger("PointAlign")
         self.logger.setLevel(logging.DEBUG)
 
-        # File handler - always logs everything
-        fh = logging.FileHandler(self.log_file, mode='a', encoding='utf-8')
-        fh.setLevel(logging.DEBUG)
-        fh.setFormatter(logging.Formatter(
-            '%(asctime)s [%(levelname)s] %(message)s',
-            datefmt='%Y-%m-%d %H:%M:%S'
-        ))
-        self.logger.addHandler(fh)
+        # File handler - only if enabled (disabled by default for frozen builds)
+        if enable_file_logging:
+            fh = logging.FileHandler(self.log_file, mode='a', encoding='utf-8')
+            fh.setLevel(logging.DEBUG)
+            fh.setFormatter(logging.Formatter(
+                '%(asctime)s [%(levelname)s] %(message)s',
+                datefmt='%Y-%m-%d %H:%M:%S'
+            ))
+            self.logger.addHandler(fh)
 
-        # Console handler - respects verbose mode
+        # Console handler - respects verbose mode (suppress in frozen builds)
         ch = logging.StreamHandler()
-        ch.setLevel(logging.INFO)
+        ch.setLevel(logging.CRITICAL)  # Suppress console output by default
         ch.setFormatter(logging.Formatter('%(message)s'))
         self.logger.addHandler(ch)
 
@@ -191,8 +193,8 @@ def get_logger() -> DiagnosticLogger:
     return _global_logger
 
 
-def init_logger(log_dir: Optional[Path] = None) -> DiagnosticLogger:
+def init_logger(log_dir: Optional[Path] = None, enable_file_logging: bool = False) -> DiagnosticLogger:
     """Initialize the global logger with optional custom directory."""
     global _global_logger
-    _global_logger = DiagnosticLogger(log_dir)
+    _global_logger = DiagnosticLogger(log_dir, enable_file_logging)
     return _global_logger

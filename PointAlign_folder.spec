@@ -2,7 +2,7 @@
 # Alternative spec for ONE-FOLDER distribution (faster startup)
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('Test_with_img.lys', '.'), ('Test.GDS', '.'), ('point_align_batch_runner_gui.py', '.')]
+datas = [('Test_with_img.lys', '.'), ('Test.GDS', '.'), ('point_align_batch_runner_gui.py', '.'), ('example_points_for_manual.png', '.')]
 binaries = []
 hiddenimports = ['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets',
                  'shiboken6', 'point_align_batch_runner_gui',
@@ -56,7 +56,6 @@ a = Analysis(
     noarchive=False,
     optimize=0,
     win_no_prefer_redirects=False,
-    win_private_assemblies=True,
 )
 pyz = PYZ(a.pure)
 
@@ -76,7 +75,7 @@ exe = EXE(
     target_arch=None,
     codesign_identity=None,
     entitlements_file=None,
-    icon=['icon.ico'],
+    icon='icon.ico',
 )
 
 # Build separate console runner for spawning subprocesses
@@ -93,7 +92,6 @@ console_a = Analysis(
     noarchive=False,
     optimize=0,
     win_no_prefer_redirects=False,
-    win_private_assemblies=True,
 )
 console_pyz = PYZ(console_a.pure)
 

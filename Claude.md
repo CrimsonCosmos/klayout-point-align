@@ -13,30 +13,49 @@
 - Used in 2D materials research for contact fabrication
 - Windows-only, standalone executables (no Python required for end users)
 
-**Current State (as of 2025-11-11)**
+**Current State (as of 2025-11-22)**
 - **Status**: ⚠️ UI Redesign in Progress - See `UI_REDESIGN_HANDOFF.md`
 - **Main Branch**: ✅ Working version (v1.1.0 with bug fixes)
 - **WIP Branch** (`ui-redesign-wip`): 🟡 Major UI redesign (incomplete)
 - **Version**: 1.1.0 (main), 1.2.0 (wip branch)
-- **Platform**: Windows 10/11 (64-bit), Python 3.13.7
+- **Platform**: Windows 10/11 (64-bit), Python 3.10.5+
 
 **⚠️ IMPORTANT: Active Development**
 There is a major UI redesign in progress on branch `ui-redesign-wip`.
 - To use WORKING code: `git checkout main`
 - To continue redesign: `git checkout ui-redesign-wip` and read `UI_REDESIGN_HANDOFF.md`
 
+**Build Options**
+There are TWO ways to build this project:
+
+**Option 1: Single .exe file (RECOMMENDED for distribution)**
+- `PointAlign_onefile.spec` - Single 96 MB executable
+- **Pros**: Easy to share - just one file!
+- **Cons**: Slower startup (extracts to temp folder on each run)
+- **Build**: `py -m PyInstaller PointAlign_onefile.spec`
+- **Output**: `dist/PointAlign.exe`
+
+**Option 2: Folder with .exe + _internal/ (faster startup)**
+- `PointAlign_folder.spec` - Folder with executables and dependencies
+- **Pros**: Faster startup (no extraction needed)
+- **Cons**: Must share entire folder (~261 MB)
+- **Build**: `py -m PyInstaller PointAlign_folder.spec`
+- **Output**: `dist/PointAlign_v1.1/` folder
+
 **Key Files to Know**
-- `dist/PointAlign.exe` (98 MB) - Main GUI application
-- `dist/console_runner.exe` (97 MB) - Console helper for subprocesses
-- `PointAlign.spec` - PyInstaller build configuration (CRITICAL FILE)
+- `PointAlign_onefile.spec` - Single-file build configuration (RECOMMENDED)
+- `PointAlign_folder.spec` - Folder build configuration
 - `align_gui_aqua_qt.py` - Main entry point
 - `klayout_point_align/` - Core alignment algorithms
+- `gui/runner.py` - Handles in-process execution (onefile mode) or subprocess spawning (folder mode)
 
 **If user asks to build**:
 ```bash
-cd /c/Users/gehl2/KlayoutAutoAlign
-py -m PyInstaller PointAlign.spec
-# Output: dist/PointAlign.exe, dist/console_runner.exe
+# For single .exe (RECOMMENDED for distribution)
+py -m PyInstaller PointAlign_onefile.spec
+
+# For folder build (faster startup, testing)
+py -m PyInstaller PointAlign_folder.spec
 ```
 
 **If user reports an error**:
@@ -91,28 +110,53 @@ Templates: Test_with_img.lys, Test.GDS (bundled in executables)
 
 ## 🏗️ Architecture & Design Decisions
 
-### Why Two Executables?
+### Build Modes: Onefile vs Folder
 
-**Problem**: PyInstaller GUI apps built with `console=False` cannot spawn Python subprocesses because:
+**Onefile Mode (PointAlign_onefile.spec)** ⭐ RECOMMENDED
+- **Single .exe file** (96 MB)
+- Everything bundled inside the executable
+- **How it works**:
+  1. On launch, extracts dependencies to `%TEMP%\_MEI<random>\`
+  2. Runs batch processing **in-process** using `runpy.run_path()`
+  3. No subprocess spawning needed
+  4. On exit, temp folder is deleted (usually)
+- **Pros**: Easy distribution - just share one file
+- **Cons**: Slightly slower startup (1-2 seconds for extraction)
+- **Use case**: Sharing with end users
+
+**Folder Mode (PointAlign_folder.spec)**
+- **Folder with two .exe files** (~261 MB total)
+  - `PointAlign.exe` (main GUI)
+  - `console_runner.exe` (subprocess helper)
+  - `_internal/` folder with all dependencies
+- **How it works**:
+  1. Both executables extract to `_MEIPASS` (same as onefile)
+  2. Runs batch processing in **subprocess** using `console_runner.exe`
+  3. Both .exe files must be in same directory
+- **Pros**: Faster startup (no extraction), easier debugging
+- **Cons**: Must share entire folder
+- **Use case**: Development, testing, debugging
+
+### Why Two Execution Methods?
+
+**Problem**: PyInstaller GUI apps built with `console=False` cannot easily spawn Python subprocesses because:
 1. GUI mode uses `runw.exe` bootloader (no console)
-2. Executables extract to temporary `_MEIPASS` directory at runtime
-3. No `python.exe` available for spawning child processes
-4. Batch processing scripts need full Python environment
+2. No `python.exe` available in frozen builds
+3. Batch processing scripts need full Python environment
 
-**Solution**: Dual-executable architecture
-1. **PointAlign.exe** (`console=False`)
-   - Main GUI application
-   - No console window shown
-   - Manages user interface
-   - Spawns console_runner.exe for processing tasks
+**Solution**: `gui/runner.py` detects the build type and adapts:
 
-2. **console_runner.exe** (`console=True`)
-   - Console bootloader with Python interpreter access
-   - Contains all dependencies (NumPy, OpenCV, klayout_point_align)
-   - Executes: `runpy.run_path(script.py)`
-   - Runs `point_align_batch_runner_gui.py` with full module access
+```python
+if getattr(sys, 'frozen', False):
+    # Onefile mode: Run in-process using runpy
+    self._run_inprocess(script_path, log_path, logger)
+else:
+    # Development mode: Use system Python
+    subprocess.run(['python', script_path, *args])
+```
 
-**Critical**: Both executables MUST be in same directory. `gui/runner.py` looks for console_runner.exe at: `Path(sys.executable).parent / "console_runner.exe"`
+**Onefile Mode**: Uses `runpy.run_path()` to execute `point_align_batch_runner_gui.py` in the same process
+**Folder Mode**: Uses `subprocess.Popen()` to spawn `console_runner.exe` (separate process)
 
 ### Data Flow
 ```
@@ -297,6 +341,53 @@ datas=[
 ```
 
 **Check at runtime**: Files are extracted to `sys._MEIPASS` directory
+
+#### 5. Reference image not found & Icon not displaying (SOLVED)
+
+**Date**: 2025-11-22
+**Symptoms**:
+1. Clicking "?" button next to [Default] landmark preset shows "(Reference image not found)"
+2. PointAlign.exe doesn't display custom icon in Windows File Explorer
+
+**Root Cause**:
+1. `example_points_for_manual.png` was not included in the `datas=[]` list in spec file
+2. Code was using `Path(__file__).parent.parent` instead of `resource_path()` helper
+3. Icon parameter had incorrect syntax: `icon=['icon.ico']` instead of `icon='icon.ico'`
+
+**Solution**:
+1. Added image to spec file `datas` list:
+```python
+datas = [
+    ('Test_with_img.lys', '.'),
+    ('Test.GDS', '.'),
+    ('point_align_batch_runner_gui.py', '.'),
+    ('example_points_for_manual.png', '.')  # Add this
+]
+```
+
+2. Updated `gui/align_tab.py` to use `resource_path()`:
+```python
+# Before:
+reference_path = Path(__file__).parent.parent / "example_points_for_manual.png"
+
+# After:
+reference_path = resource_path("example_points_for_manual.png")
+```
+
+3. Fixed icon syntax in spec file:
+```python
+# Before:
+icon=['icon.ico'],
+
+# After:
+icon='icon.ico',
+```
+
+**Lesson**:
+- Always use the `resource_path()` helper function (defined in `gui/align_tab.py:35`) for any files that need to work in both development and frozen (PyInstaller) environments
+- The `resource_path()` function automatically handles `sys._MEIPASS` detection
+- Icon parameter in PyInstaller EXE() must be a string, not a list
+- ALL static files (images, templates, etc.) must be explicitly added to `datas=[]` in spec file
 
 ---
 
@@ -752,6 +843,40 @@ git push origin v1.1.0
 
 ## 📝 Session Notes & History
 
+### Session 2025-11-22 (Bug Fixes: Reference Image & Icon)
+
+**What was accomplished:**
+1. ✅ Fixed reference image not found error (clicking "?" next to Default landmark preset)
+2. ✅ Fixed .exe icon not displaying in Windows File Explorer
+3. ✅ Added `example_points_for_manual.png` to spec file `datas=[]`
+4. ✅ Updated code to use `resource_path()` helper function
+5. ✅ Corrected icon parameter syntax in spec file
+6. ✅ Successfully rebuilt executables with fixes
+7. ✅ Updated Claude.md with bug fix documentation
+
+**Key issues resolved:**
+- Reference image not bundled → Added to `PointAlign_folder.spec` datas list
+- Incorrect path resolution in frozen app → Changed from `Path(__file__).parent.parent` to `resource_path()`
+- Icon not displaying → Fixed syntax from `icon=['icon.ico']` to `icon='icon.ico'`
+
+**Files modified:**
+- `PointAlign_folder.spec:5` - Added `example_points_for_manual.png` to datas
+- `PointAlign_folder.spec:78` - Fixed icon parameter syntax
+- `gui/align_tab.py:333` - Updated to use `resource_path()` helper
+- `Claude.md` - Added Issue #5 and this session note
+
+**Current state:**
+- Both executables rebuilt successfully with fixes
+- Reference image now bundled in `dist/PointAlign_v1.1/_internal/`
+- Icon parameter corrected (should display in File Explorer)
+- Documentation updated with lessons learned
+
+**Lessons learned:**
+- Always use `resource_path()` helper for any file access that needs to work in both dev and frozen modes
+- Icon parameter in PyInstaller EXE() must be a string, not a list
+- ALL static assets must be explicitly added to `datas=[]` in spec file
+- The `resource_path()` function is already defined in `gui/align_tab.py:35` - use it!
+
 ### Session 2025-11-11 (Build & Debug)
 
 **What was accomplished:**
@@ -909,8 +1034,8 @@ Before suggesting code changes, verify:
 
 ---
 
-**Document Version**: 3.0
-**Last Updated**: 2025-11-11
+**Document Version**: 3.1
+**Last Updated**: 2025-11-22
 **Last Updated By**: Claude (Sonnet 4.5)
 **Software Version**: 1.1.0
 **Document Status**: ✅ Production-ready, comprehensive AI assistant memory

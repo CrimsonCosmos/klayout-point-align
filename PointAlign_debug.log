@@ -4028,3 +4028,180 @@ REQUIRED FILES CHECK:
 2025-11-21 12:20:19 [INFO] ================================================================================
 2025-11-21 12:20:19 [INFO] Starting Point Align GUI...
 2025-11-21 12:20:20 [INFO] GUI initialized successfully
+2025-11-22 13:12:31 [INFO] ================================================================================
+2025-11-22 13:12:31 [INFO] PointAlign Debug Log - Session started at 2025-11-22 13:12:31.546763
+2025-11-22 13:12:31 [INFO] ================================================================================
+2025-11-22 13:12:31 [INFO] SYSTEM INFORMATION:
+2025-11-22 13:12:31 [INFO]   OS: Windows 10 (10.0.22000)
+2025-11-22 13:12:31 [INFO]   Platform: Windows-10-10.0.22000-SP0
+2025-11-22 13:12:31 [INFO]   Architecture: AMD64
+2025-11-22 13:12:31 [INFO]   Processor: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+2025-11-22 13:12:31 [INFO]   Python Version: 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+2025-11-22 13:12:31 [INFO]   Python Executable: C:\Users\Dylan\AppData\Local\Programs\Python\Python310\python.exe
+2025-11-22 13:12:31 [INFO]   Running as: Python script
+2025-11-22 13:12:31 [INFO]   Script directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:12:31 [INFO]   Working directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:12:31 [INFO] 
+INSTALLED PACKAGES:
+2025-11-22 13:12:32 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-22 13:12:32 [INFO]   Qt Backend: PySide6
+2025-11-22 13:12:32 [INFO]   PySide6: 6.9.3
+2025-11-22 13:12:32 [INFO]   NumPy: 2.2.6
+2025-11-22 13:12:32 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-22 13:12:32 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys
+2025-11-22 13:12:32 [INFO]   ✓ Test.GDS: Found at C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 13:12:32 [INFO]   ✓ icon.ico: Found at C:\Users\Dylan\KlayoutAutoAlign\icon.ico
+2025-11-22 13:12:32 [INFO]   ✓ console_runner.py: Found at C:\Users\Dylan\KlayoutAutoAlign\console_runner.py
+2025-11-22 13:12:32 [INFO] ================================================================================
+2025-11-22 13:12:32 [INFO] Starting Point Align GUI...
+2025-11-22 13:12:33 [INFO] GUI initialized successfully
+2025-11-22 13:13:13 [INFO] Launching picker for IMG_2589.jpeg
+2025-11-22 13:43:38 [INFO] ================================================================================
+2025-11-22 13:43:38 [INFO] PointAlign Debug Log - Session started at 2025-11-22 13:43:38.069421
+2025-11-22 13:43:38 [INFO] ================================================================================
+2025-11-22 13:43:38 [INFO] SYSTEM INFORMATION:
+2025-11-22 13:43:38 [INFO]   OS: Windows 10 (10.0.22000)
+2025-11-22 13:43:38 [INFO]   Platform: Windows-10-10.0.22000-SP0
+2025-11-22 13:43:38 [INFO]   Architecture: AMD64
+2025-11-22 13:43:38 [INFO]   Processor: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+2025-11-22 13:43:38 [INFO]   Python Version: 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+2025-11-22 13:43:38 [INFO]   Python Executable: C:\Users\Dylan\AppData\Local\Programs\Python\Python310\python.exe
+2025-11-22 13:43:38 [INFO]   Running as: Python script
+2025-11-22 13:43:38 [INFO]   Script directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:43:38 [INFO]   Working directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:43:38 [INFO] 
+INSTALLED PACKAGES:
+2025-11-22 13:43:38 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-22 13:43:38 [INFO]   Qt Backend: PySide6
+2025-11-22 13:43:38 [INFO]   PySide6: 6.9.3
+2025-11-22 13:43:38 [INFO]   NumPy: 2.2.6
+2025-11-22 13:43:38 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-22 13:43:38 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys
+2025-11-22 13:43:38 [INFO]   ✓ Test.GDS: Found at C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 13:43:38 [INFO]   ✓ icon.ico: Found at C:\Users\Dylan\KlayoutAutoAlign\icon.ico
+2025-11-22 13:43:38 [INFO]   ✓ console_runner.py: Found at C:\Users\Dylan\KlayoutAutoAlign\console_runner.py
+2025-11-22 13:43:38 [INFO] ================================================================================
+2025-11-22 13:43:38 [INFO] Starting Point Align GUI...
+2025-11-22 13:43:38 [INFO] GUI initialized successfully
+2025-11-22 13:47:47 [INFO] ================================================================================
+2025-11-22 13:47:47 [INFO] PointAlign Debug Log - Session started at 2025-11-22 13:47:47.573849
+2025-11-22 13:47:47 [INFO] ================================================================================
+2025-11-22 13:47:47 [INFO] SYSTEM INFORMATION:
+2025-11-22 13:47:47 [INFO]   OS: Windows 10 (10.0.22000)
+2025-11-22 13:47:47 [INFO]   Platform: Windows-10-10.0.22000-SP0
+2025-11-22 13:47:47 [INFO]   Architecture: AMD64
+2025-11-22 13:47:47 [INFO]   Processor: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+2025-11-22 13:47:47 [INFO]   Python Version: 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+2025-11-22 13:47:47 [INFO]   Python Executable: C:\Users\Dylan\AppData\Local\Programs\Python\Python310\python.exe
+2025-11-22 13:47:47 [INFO]   Running as: Python script
+2025-11-22 13:47:47 [INFO]   Script directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:47:47 [INFO]   Working directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:47:47 [INFO] 
+INSTALLED PACKAGES:
+2025-11-22 13:47:47 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-22 13:47:47 [INFO]   Qt Backend: PySide6
+2025-11-22 13:47:47 [INFO]   PySide6: 6.9.3
+2025-11-22 13:47:47 [INFO]   NumPy: 2.2.6
+2025-11-22 13:47:47 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-22 13:47:47 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys
+2025-11-22 13:47:47 [INFO]   ✓ Test.GDS: Found at C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 13:47:47 [INFO]   ✓ icon.ico: Found at C:\Users\Dylan\KlayoutAutoAlign\icon.ico
+2025-11-22 13:47:47 [INFO]   ✓ console_runner.py: Found at C:\Users\Dylan\KlayoutAutoAlign\console_runner.py
+2025-11-22 13:47:47 [INFO] ================================================================================
+2025-11-22 13:47:47 [INFO] Starting Point Align GUI...
+2025-11-22 13:47:48 [INFO] GUI initialized successfully
+2025-11-22 13:48:00 [INFO] ================================================================================
+2025-11-22 13:48:00 [INFO] PointAlign Debug Log - Session started at 2025-11-22 13:48:00.848442
+2025-11-22 13:48:00 [INFO] ================================================================================
+2025-11-22 13:48:00 [INFO] SYSTEM INFORMATION:
+2025-11-22 13:48:00 [INFO]   OS: Windows 10 (10.0.22000)
+2025-11-22 13:48:00 [INFO]   Platform: Windows-10-10.0.22000-SP0
+2025-11-22 13:48:00 [INFO]   Architecture: AMD64
+2025-11-22 13:48:00 [INFO]   Processor: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+2025-11-22 13:48:00 [INFO]   Python Version: 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+2025-11-22 13:48:00 [INFO]   Python Executable: C:\Users\Dylan\AppData\Local\Programs\Python\Python310\python.exe
+2025-11-22 13:48:00 [INFO]   Running as: Python script
+2025-11-22 13:48:00 [INFO]   Script directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:48:00 [INFO]   Working directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:48:00 [INFO] 
+INSTALLED PACKAGES:
+2025-11-22 13:48:01 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-22 13:48:01 [INFO]   Qt Backend: PySide6
+2025-11-22 13:48:01 [INFO]   PySide6: 6.9.3
+2025-11-22 13:48:01 [INFO]   NumPy: 2.2.6
+2025-11-22 13:48:01 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-22 13:48:01 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys
+2025-11-22 13:48:01 [INFO]   ✓ Test.GDS: Found at C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 13:48:01 [INFO]   ✓ icon.ico: Found at C:\Users\Dylan\KlayoutAutoAlign\icon.ico
+2025-11-22 13:48:01 [INFO]   ✓ console_runner.py: Found at C:\Users\Dylan\KlayoutAutoAlign\console_runner.py
+2025-11-22 13:48:01 [INFO] ================================================================================
+2025-11-22 13:48:01 [INFO] Starting Point Align GUI...
+2025-11-22 13:48:01 [INFO] GUI initialized successfully
+2025-11-22 13:55:32 [INFO] ================================================================================
+2025-11-22 13:55:32 [INFO] PointAlign Debug Log - Session started at 2025-11-22 13:55:32.688492
+2025-11-22 13:55:32 [INFO] ================================================================================
+2025-11-22 13:55:32 [INFO] SYSTEM INFORMATION:
+2025-11-22 13:55:32 [INFO]   OS: Windows 10 (10.0.22000)
+2025-11-22 13:55:32 [INFO]   Platform: Windows-10-10.0.22000-SP0
+2025-11-22 13:55:32 [INFO]   Architecture: AMD64
+2025-11-22 13:55:32 [INFO]   Processor: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+2025-11-22 13:55:32 [INFO]   Python Version: 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+2025-11-22 13:55:32 [INFO]   Python Executable: C:\Users\Dylan\AppData\Local\Programs\Python\Python310\python.exe
+2025-11-22 13:55:32 [INFO]   Running as: Python script
+2025-11-22 13:55:32 [INFO]   Script directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:55:32 [INFO]   Working directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 13:55:32 [INFO] 
+INSTALLED PACKAGES:
+2025-11-22 13:55:32 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-22 13:55:32 [INFO]   Qt Backend: PySide6
+2025-11-22 13:55:32 [INFO]   PySide6: 6.9.3
+2025-11-22 13:55:32 [INFO]   NumPy: 2.2.6
+2025-11-22 13:55:32 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-22 13:55:32 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys
+2025-11-22 13:55:32 [INFO]   ✓ Test.GDS: Found at C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 13:55:32 [INFO]   ✓ icon.ico: Found at C:\Users\Dylan\KlayoutAutoAlign\icon.ico
+2025-11-22 13:55:32 [INFO]   ✓ console_runner.py: Found at C:\Users\Dylan\KlayoutAutoAlign\console_runner.py
+2025-11-22 13:55:32 [INFO] ================================================================================
+2025-11-22 13:55:32 [INFO] Starting Point Align GUI...
+2025-11-22 13:55:33 [INFO] GUI initialized successfully
+2025-11-22 13:57:51 [INFO] Run log file: C:\Users\Dylan\AppData\Local\Temp\PointAlign_run_20251122_135751.log
+2025-11-22 13:57:51 [DEBUG] Using Python command: ['py', '-3']
+2025-11-22 13:57:51 [INFO] Starting subprocess:
+2025-11-22 13:57:51 [INFO]   Command: py -3 -u C:\Users\Dylan\KlayoutAutoAlign\point_align_batch_runner_gui.py --files C:/Users/Dylan/Downloads/IMG_2589.jpeg --lys-in C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys --after (-50,60),(70,60),(-50,-60),(70,-600) --affine --combined-out C:\Users\Dylan\Desktop\Aligned125ByPentiumD.lys --auto-review --gds-file C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 13:57:51 [DEBUG] Starting subprocess with creationflags=134217728
+2025-11-22 13:57:55 [DEBUG]   [STDOUT] [OK] IMG_2589.jpeg → C:\Users\Dylan\Desktop\Aligned125ByPentiumD.lys (RMS=80.112 µm)
+2025-11-22 13:57:55 [DEBUG]   [STDOUT] Done. Appended 1/1 images into: C:\Users\Dylan\Desktop\Aligned125ByPentiumD.lys
+2025-11-22 13:57:55 [INFO] Process completed with exit code: 0
+2025-11-22 14:06:22 [INFO] ================================================================================
+2025-11-22 14:06:22 [INFO] PointAlign Debug Log - Session started at 2025-11-22 14:06:22.243988
+2025-11-22 14:06:22 [INFO] ================================================================================
+2025-11-22 14:06:22 [INFO] SYSTEM INFORMATION:
+2025-11-22 14:06:22 [INFO]   OS: Windows 10 (10.0.22000)
+2025-11-22 14:06:22 [INFO]   Platform: Windows-10-10.0.22000-SP0
+2025-11-22 14:06:22 [INFO]   Architecture: AMD64
+2025-11-22 14:06:22 [INFO]   Processor: AMD64 Family 23 Model 24 Stepping 1, AuthenticAMD
+2025-11-22 14:06:22 [INFO]   Python Version: 3.10.5 (tags/v3.10.5:f377153, Jun  6 2022, 16:14:13) [MSC v.1929 64 bit (AMD64)]
+2025-11-22 14:06:22 [INFO]   Python Executable: C:\Users\Dylan\AppData\Local\Programs\Python\Python310\python.exe
+2025-11-22 14:06:22 [INFO]   Running as: Python script
+2025-11-22 14:06:22 [INFO]   Script directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 14:06:22 [INFO]   Working directory: C:\Users\Dylan\KlayoutAutoAlign
+2025-11-22 14:06:22 [INFO] 
+INSTALLED PACKAGES:
+2025-11-22 14:06:22 [INFO]   OpenCV (cv2): 4.12.0
+2025-11-22 14:06:22 [INFO]   Qt Backend: PySide6
+2025-11-22 14:06:22 [INFO]   PySide6: 6.9.3
+2025-11-22 14:06:22 [INFO]   NumPy: 2.2.6
+2025-11-22 14:06:22 [INFO] 
+REQUIRED FILES CHECK:
+2025-11-22 14:06:22 [INFO]   ✓ Test_with_img.lys: Found at C:\Users\Dylan\KlayoutAutoAlign\Test_with_img.lys
+2025-11-22 14:06:22 [INFO]   ✓ Test.GDS: Found at C:\Users\Dylan\KlayoutAutoAlign\Test.GDS
+2025-11-22 14:06:22 [INFO]   ✓ icon.ico: Found at C:\Users\Dylan\KlayoutAutoAlign\icon.ico
+2025-11-22 14:06:22 [INFO]   ✓ console_runner.py: Found at C:\Users\Dylan\KlayoutAutoAlign\console_runner.py
+2025-11-22 14:06:22 [INFO] ================================================================================
+2025-11-22 14:06:22 [INFO] Starting Point Align GUI...
+2025-11-22 14:06:22 [INFO] GUI initialized successfully

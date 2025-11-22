@@ -11,7 +11,8 @@
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\":*)",
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m py_compile \"C:\\Users\\gehl2\\Auto_align_program\\klayout_point_align\\transforms.py\")",
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m py_compile \"C:\\Users\\gehl2\\Auto_align_program\\klayout_point_align\\aligner.py\")",
-      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c:*)"
+      "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c:*)",
+      "Bash(py -m PyInstaller:*)"
     ],
     "deny": [],
     "ask": []

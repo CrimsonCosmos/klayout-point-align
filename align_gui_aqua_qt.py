@@ -5,11 +5,18 @@ from __future__ import annotations
 import sys
 import json
 from pathlib import Path
+from functools import lru_cache
 from qt_compat import QtCore, QtGui, QtWidgets
 
 from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner
 from diagnostic_logger import init_logger
+
+@lru_cache(maxsize=8)
+def resource_path(rel_path: str) -> Path:
+    """Return absolute path to bundled resource (PyInstaller-safe)."""
+    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
+    return base / rel_path
 
 APP_TITLE = "Point Align v1.2"
 
@@ -681,14 +688,36 @@ class MainWin(QtWidgets.QMainWindow):
         event.accept()
 
 def main():
-    # Initialize diagnostic logger
-    logger = init_logger()
-    logger.log_system_info()
-    logger.info("Starting Point Align GUI...")
+    # Initialize diagnostic logger (file logging disabled in production)
+    # Set enable_file_logging=True for debugging
+    logger = init_logger(enable_file_logging=False)
+    # logger.log_system_info()  # Commented out to reduce noise
+    # logger.info("Starting Point Align GUI...")
 
     try:
         app = QtWidgets.QApplication(sys.argv)
+
+        # Set application icon for taskbar and window
+        icon_path = resource_path("icon.ico")
+        if icon_path.exists():
+            app_icon = QtGui.QIcon(str(icon_path))
+            app.setWindowIcon(app_icon)
+
+        # Windows: Set AppUserModelID for proper taskbar icon display
+        if sys.platform == 'win32':
+            try:
+                import ctypes
+                myappid = 'WangLab.PointAlign.GUI.1.1'  # Arbitrary string
+                ctypes.windll.shell32.SetCurrentProcessExplicitAppUserModelID(myappid)
+            except:
+                pass  # Not critical if it fails
+
         w = MainWin()
+
+        # Also set icon on main window
+        if icon_path.exists():
+            w.setWindowIcon(app_icon)
+
         w.show()
         logger.info("GUI initialized successfully")
         sys.exit(app.exec())
