@@ -36,8 +36,56 @@ def resource_path(rel_path: str) -> Path:
     base = Path(getattr(__import__("sys").modules["sys"], "_MEIPASS", Path(__file__).resolve().parent.parent))
     return base / rel_path
 
+def sanitize_filename(name: str) -> str:
+    """Remove invalid filename characters for Windows."""
+    # Invalid characters: < > : " / \ | ? *
+    invalid_chars = r'[<>:"/\\|?*]'
+    sanitized = re.sub(invalid_chars, '', name)
+    # Also remove control characters
+    sanitized = ''.join(c for c in sanitized if ord(c) >= 32)
+    return sanitized.strip()
+
+def validate_preset_name(name: str, parent_widget) -> str | None:
+    """Validate and sanitize a preset name. Returns sanitized name or None if invalid."""
+    if not name or not name.strip():
+        return None
+
+    sanitized = sanitize_filename(name.strip())
+
+    if not sanitized:
+        QtWidgets.QMessageBox.warning(
+            parent_widget,
+            "Invalid Name",
+            "Preset name cannot contain only special characters.\n\n"
+            "Invalid characters: < > : \" / \\ | ? *"
+        )
+        return None
+
+    if sanitized != name.strip():
+        # Name was modified
+        reply = QtWidgets.QMessageBox.question(
+            parent_widget,
+            "Name Modified",
+            f"The name contains invalid characters.\n\n"
+            f"Original: {name.strip()}\n"
+            f"Sanitized: {sanitized}\n\n"
+            f"Use the sanitized name?",
+            QtWidgets.QMessageBox.StandardButton.Yes | QtWidgets.QMessageBox.StandardButton.No
+        )
+        if reply != QtWidgets.QMessageBox.StandardButton.Yes:
+            return None
+
+    return sanitized
+
 def parse_coordinates(coord_str: str) -> List[Tuple[float, float]]:
     """Parse coordinate string: '(-50,60),(70,60),(-50,-60),(70,-60)'"""
+    # Normalize Unicode minus signs to ASCII hyphen-minus
+    # U+2212 (MINUS SIGN), U+2013 (EN DASH), U+2014 (EM DASH)
+    coord_str = coord_str.replace('\u2212', '-')  # Unicode minus sign
+    coord_str = coord_str.replace('\u2013', '-')  # En dash
+    coord_str = coord_str.replace('\u2014', '-')  # Em dash
+    coord_str = coord_str.replace('−', '-')      # Another minus variant
+
     # Use regex to extract all (x,y) pairs
     pattern = r'\(([^)]+)\)'
     matches = re.findall(pattern, coord_str)
@@ -148,6 +196,16 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.landmark_combo.currentTextChanged.connect(self._on_settings_changed)
         landmark_row.addWidget(self.landmark_combo, 1)
 
+        # RMS quality indicator
+        self.rms_indicator = QtWidgets.QLabel()
+        self.rms_indicator.setMinimumWidth(100)
+        self.rms_indicator.setMaximumHeight(24)
+        self.rms_indicator.setAlignment(QtCore.Qt.AlignCenter)
+        self.rms_indicator.setStyleSheet("padding: 2px 8px; border-radius: 3px; font-weight: bold;")
+        self.rms_indicator.setToolTip("Alignment quality (RMS error)")
+        self.rms_indicator.hide()  # Hidden until first alignment
+        landmark_row.addWidget(self.rms_indicator)
+
         landmark_row.addStretch(3)
 
         layout.addLayout(landmark_row)
@@ -224,6 +282,35 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.landmark_combo.addItems(presets)
         if current in presets:
             self.landmark_combo.setCurrentText(current)
+
+    def update_rms_indicator(self, rms_um: float):
+        """Update the RMS quality indicator with color coding."""
+        # Determine quality based on RMS error
+        if rms_um < 0.3:
+            symbol = '✓ Excellent'
+            color = '#00AA00'  # Green
+            bg_color = '#E8F5E9'
+        elif rms_um < 0.5:
+            symbol = '✓ Good'
+            color = '#88AA00'  # Yellow-green
+            bg_color = '#F1F8E9'
+        elif rms_um < 1.0:
+            symbol = '⚠ Fair'
+            color = '#FFAA00'  # Orange
+            bg_color = '#FFF3E0'
+        else:
+            symbol = '✗ Poor'
+            color = '#CC0000'  # Red
+            bg_color = '#FFEBEE'
+
+        # Update label
+        self.rms_indicator.setText(f"{symbol} ({rms_um:.3f} µm)")
+        self.rms_indicator.setStyleSheet(
+            f"padding: 2px 8px; border-radius: 3px; font-weight: bold; "
+            f"color: {color}; background-color: {bg_color};"
+        )
+        self.rms_indicator.setToolTip(f"Alignment quality: RMS error = {rms_um:.3f} µm")
+        self.rms_indicator.show()
 
     def _show_image_preview(self):
         """Show a larger preview of the image in a dialog."""
@@ -392,7 +479,12 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         name, ok = QtWidgets.QInputDialog.getText(
             self, "Add Preset", "Enter preset name:"
         )
-        if not ok or not name.strip():
+        if not ok:
+            return
+
+        # Validate and sanitize name
+        name = validate_preset_name(name, self)
+        if not name:
             return
 
         coords, ok = QtWidgets.QInputDialog.getText(
@@ -420,7 +512,7 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
             )
             return
 
-        if self.preset_manager.add_preset(name.strip(), coords.strip()):
+        if self.preset_manager.add_preset(name, coords.strip()):
             self._refresh_preset_list()
             self.presetsChanged.emit()
             QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' added!")
@@ -571,7 +663,12 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
         name, ok = QtWidgets.QInputDialog.getText(
             self, "Add GDS Preset", "Enter preset name:"
         )
-        if not ok or not name.strip():
+        if not ok:
+            return
+
+        # Validate and sanitize name
+        name = validate_preset_name(name, self)
+        if not name:
             return
 
         # File dialog to select GDS file
@@ -584,7 +681,7 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
         if not gds_path:
             return
 
-        if self.gds_manager.add_preset(name.strip(), gds_path):
+        if self.gds_manager.add_preset(name, gds_path):
             self._refresh_preset_list()
             self.presetsChanged.emit()
             QtWidgets.QMessageBox.information(self, "Success", f"GDS preset '{name}' added!")
@@ -625,8 +722,7 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
 
     def _on_preview_gds(self, gds_path: str):
         """Open GDS file in KLayout for preview."""
-        import subprocess
-        import sys
+        import os
         from pathlib import Path
 
         # Resolve relative paths to absolute
@@ -647,50 +743,14 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
             )
             return
 
-        # Try to find KLayout executable
-        import shutil
-
-        klayout_candidates = [
-            r"C:\Program Files\KLayout\klayout_app.exe",
-            r"C:\Program Files (x86)\KLayout\klayout_app.exe",
-            shutil.which("klayout_app.exe"),  # Search PATH
-            shutil.which("klayout"),  # Search PATH (alternative name)
-        ]
-
-        klayout_exe = None
-        for candidate in klayout_candidates:
-            if candidate is None:
-                continue
-
-            # Just check if the file exists (don't run it)
-            try:
-                if Path(candidate).exists():
-                    klayout_exe = candidate
-                    break
-            except:
-                continue
-
-        if not klayout_exe:
-            QtWidgets.QMessageBox.warning(
-                self, "KLayout Not Found",
-                "Could not find KLayout installation.\n\n"
-                "Please ensure KLayout is installed at:\n"
-                "C:\\Program Files\\KLayout\\klayout_app.exe\n\n"
-                "Or add KLayout to your system PATH."
-            )
-            return
-
-        # Launch KLayout with the GDS file
+        # Open with default application (should be KLayout if .gds is associated)
         try:
-            subprocess.Popen([klayout_exe, str(full_path)])
-            QtWidgets.QMessageBox.information(
-                self, "Preview Opened",
-                f"Opening {full_path.name} in KLayout..."
-            )
+            os.startfile(str(full_path))
         except Exception as e:
             QtWidgets.QMessageBox.critical(
-                self, "Error",
-                f"Failed to open KLayout:\n{e}"
+                self, "Error Opening File",
+                f"Failed to open GDS file:\n{str(e)}\n\n"
+                f"Make sure KLayout is installed and associated with .gds files."
             )
 
 
@@ -1105,11 +1165,16 @@ class SessionWidget(QtWidgets.QGroupBox):
                 "Please select at least one image to align.")
             return
 
-        # Launch picker for selected images
+        # Launch picker only for images without coordinates
         for img_path in selected:
             strip = self.image_strips.get(img_path)
             if strip:
-                # Auto-launch picker for this image
+                # Skip picker if coordinates are already set
+                if strip.selected_coordinates:
+                    logger.info(f"Skipping picker for {Path(img_path).name} - coordinates already set")
+                    continue
+
+                # Auto-launch picker for this image (no coordinates yet)
                 try:
                     from klayout_point_align.picker import pick_points_gui
                     logger.info(f"Launching picker for {Path(img_path).name}")
@@ -1178,8 +1243,8 @@ class SessionWidget(QtWidgets.QGroupBox):
                     after_origin_um=(0.0, 0.0)
                 )
 
-                # Run alignment
-                align_markers(
+                # Run alignment and capture RMS error
+                H, rms_error = align_markers(
                     before_ctr_px=picked_points,
                     cfg=cfg,
                     lys_in=current_lys_in,
@@ -1187,6 +1252,9 @@ class SessionWidget(QtWidgets.QGroupBox):
                     image_file=img_path,
                     gds_file=self.get_selected_gds_path()
                 )
+
+                # Update RMS indicator for this image
+                strip.update_rms_indicator(rms_error)
 
                 # After first image, use the output file as input for subsequent images
                 current_lys_in = output_file
@@ -1339,8 +1407,18 @@ class AlignTab(QtWidgets.QWidget):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
-        self._prefs_file = Path(__file__).parent.parent / "align_tab_prefs.json"
-        self._landmarks_file = Path(__file__).parent.parent / LANDMARKS_PREFS_NAME
+
+        # Store preferences in a writable location
+        import sys
+        if getattr(sys, 'frozen', False):
+            # Running as frozen .exe - use executable directory (writable)
+            prefs_dir = Path(sys.executable).parent
+        else:
+            # Running as script - use project directory
+            prefs_dir = Path(__file__).parent.parent
+
+        self._prefs_file = prefs_dir / "align_tab_prefs.json"
+        self._landmarks_file = prefs_dir / LANDMARKS_PREFS_NAME
         self.sessions: List[SessionWidget] = []  # List of session widgets
         self._session_counter = 0  # For generating new session names
         self._debug_window: Optional[DebugWindow] = None  # Lazy-created debug window
@@ -1349,7 +1427,7 @@ class AlignTab(QtWidgets.QWidget):
         self.preset_manager = LandmarkPresetManager(self._landmarks_file)
 
         # Initialize GDS preset manager
-        self._gds_presets_file = Path(__file__).parent.parent / "gds_presets.json"
+        self._gds_presets_file = prefs_dir / "gds_presets.json"
         self.gds_manager = GDSPresetManager(self._gds_presets_file)
 
         # Load preferences BEFORE building UI (so counter is restored before first session)

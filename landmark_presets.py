@@ -85,6 +85,13 @@ class LandmarkPresetManager:
         """
         import re
 
+        # Normalize Unicode minus signs to ASCII hyphen-minus
+        # U+2212 (MINUS SIGN), U+2013 (EN DASH), U+2014 (EM DASH)
+        coords = coords.replace('\u2212', '-')  # Unicode minus sign
+        coords = coords.replace('\u2013', '-')  # En dash
+        coords = coords.replace('\u2014', '-')  # Em dash
+        coords = coords.replace('−', '-')      # Another minus variant
+
         # Remove all whitespace for easier parsing
         coords_clean = coords.replace(" ", "")
 

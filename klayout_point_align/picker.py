@@ -28,9 +28,9 @@ def _load_qt():
         ) from e
 
 
-class _ImagePickerWidget:
+class _ImagePickerWidget(object):
     """
-    Zoomable/pannable image picker using QGraphicsView.
+    Zoomable/pannable image picker using QGraphicsView in a QDialog.
 
     Controls:
       - Left-click: add point (max_points)
@@ -60,17 +60,18 @@ class _ImagePickerWidget:
         self.points: List[Tuple[float, float]] = []  # centered coords (+y up)
         self.saved = False
         self._panning_with_space = False
-        self._event_loop = None  # Will be set when run() is called
 
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
-        # ---- Main window ----
-        self.win = QtWidgets.QMainWindow()
-        self.win.setWindowTitle(f"Point Picker — {Path(img_path).name}")
-        self.win.resize(1200, 850)
-        self.win.keyPressEvent = self._on_key
-        self.win.keyReleaseEvent = self._on_key_release
-        self.win.closeEvent = self._on_close
+        # ---- Dialog instead of QMainWindow ----
+        self.dialog = QtWidgets.QDialog()
+        self.dialog.setWindowTitle(f"Point Picker — {Path(img_path).name}")
+        self.dialog.resize(1200, 850)
+        self.dialog.keyPressEvent = self._on_key
+        self.dialog.keyReleaseEvent = self._on_key_release
+
+        # Create central widget layout
+        layout = QtWidgets.QVBoxLayout(self.dialog)
 
         # ---- Scene & View ----
         self.scene = QtWidgets.QGraphicsScene()
@@ -85,8 +86,13 @@ class _ImagePickerWidget:
         self.view.mouseReleaseEvent = self._on_mouse_release
         self.view.setCursor(QtCore.Qt.CrossCursor)
 
-        self.win.setCentralWidget(self.view)
-        self.status = self.win.statusBar()
+        layout.addWidget(self.view)
+
+        # ---- Status label (instead of statusBar) ----
+        self.status_label = QtWidgets.QLabel()
+        self.status_label.setWordWrap(True)
+        self.status_label.setStyleSheet("padding: 4px; background-color: #f0f0f0;")
+        layout.addWidget(self.status_label)
         self._update_status()
 
         # ---- Load image ----
@@ -119,9 +125,9 @@ class _ImagePickerWidget:
     def _update_status(self, msg: str | None = None):
         base = "Click to add points (TL, TR, BL, BR). Backspace=undo, S=save, Q/Esc=cancel, Wheel=zoom, Space-drag=pan, F=fit, R=reset."
         if msg:
-            self.status.showMessage(f"{base}  |  {msg}")
+            self.status_label.setText(f"{base}  |  {msg}")
         else:
-            self.status.showMessage(base)
+            self.status_label.setText(base)
 
     def _fit_to_view(self):
         self.view.fitInView(self._pix_item, self._QtCore.Qt.KeepAspectRatio)
@@ -235,11 +241,11 @@ class _ImagePickerWidget:
                 self._update_status(f"Need {self.max_points} points; have {len(self.points)}.")
                 return
             self.saved = True
-            self.win.close()
+            self.dialog.accept()
         elif k in (QtCore.Qt.Key_Q, QtCore.Qt.Key_Escape):
             self.points.clear()
             self.saved = False
-            self.win.close()
+            self.dialog.reject()
         elif k == QtCore.Qt.Key_F:
             self._fit_to_view()
         elif k == QtCore.Qt.Key_R:
@@ -255,29 +261,45 @@ class _ImagePickerWidget:
             self.view.setDragMode(self._QtWidgets.QGraphicsView.NoDrag)
             self.view.viewport().setCursor(self._QtCore.Qt.CrossCursor)
 
-    def _on_close(self, event):
-        if len(self.points) == self.max_points:
-            self.saved = True
-        else:
-            self.saved = False
-        event.accept()
-        # Quit the event loop if it exists
-        if self._event_loop is not None:
-            self._event_loop.quit()
-
     def run(self) -> List[Tuple[float, float]]:
-        # Make the window modal and use exec() to run a local event loop
-        # This prevents closing the main application when picker closes
-        self.win.setWindowModality(self._QtCore.Qt.ApplicationModal)
-        self.win.show()
+        # Use QDialog's built-in exec() - this handles modal dialogs properly
+        # and is designed to be created/destroyed repeatedly
+        result = self.dialog.exec()
 
-        # Create a local event loop for this window
-        self._event_loop = self._QtCore.QEventLoop()
-        self._event_loop.exec()
+        # If dialog was accepted (S key or close with all points), return points
+        if result == self._QtWidgets.QDialog.Accepted or (len(self.points) == self.max_points and self.saved):
+            return list(self.points)
+        else:
+            return []
 
-        return list(self.points) if self.saved else []
 
+# Global variable to prevent multiple pickers from opening simultaneously
+_picker_is_open = False
 
 def pick_points_gui(image_file: str, max_points: int = 4) -> List[Tuple[float, float]]:
-    picker = _ImagePickerWidget(image_file, max_points=max_points)
-    return picker.run()
+    global _picker_is_open
+
+    # Prevent opening multiple pickers at once
+    if _picker_is_open:
+        print("WARNING: Picker already open, skipping...")
+        return []
+
+    try:
+        _picker_is_open = True
+
+        # Process any pending Qt events before opening picker
+        api, QtCore, QtGui, QtWidgets = _load_qt()
+        app = QtWidgets.QApplication.instance()
+        if app:
+            app.processEvents()
+
+        picker = _ImagePickerWidget(image_file, max_points=max_points)
+        result = picker.run()
+
+        # Process events again after closing to ensure cleanup
+        if app:
+            app.processEvents()
+
+        return result
+    finally:
+        _picker_is_open = False

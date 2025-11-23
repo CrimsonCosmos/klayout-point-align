@@ -63,6 +63,7 @@ def update_klayout_session(lys_in: str, lys_out: str,
 
     # (1) Optional: update <layout> with a new GDS path
     if gds_file:
+        base = Path(gds_file).name
         for el in root.iter("layout"):
             fp = None
             name_el = None
@@ -74,11 +75,17 @@ def update_klayout_session(lys_in: str, lys_out: str,
             if fp is None:
                 fp = ET.SubElement(el, "file-path")
             fp.text = str(gds_file)
-            base = Path(gds_file).name
             if name_el is None:
                 name_el = ET.SubElement(el, "name")
             name_el.text = base
             break  # assume single <layout>
+
+        # Also update the cellview's layout-ref to match the new layout name
+        for cellview in root.iter("cellview"):
+            for child in cellview:
+                if child.tag == "layout-ref":
+                    child.text = base
+                    break
 
     # (2) Append image annotation in <view>/<annotations>
     view = None

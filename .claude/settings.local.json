@@ -12,7 +12,15 @@
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m py_compile \"C:\\Users\\gehl2\\Auto_align_program\\klayout_point_align\\transforms.py\")",
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -m py_compile \"C:\\Users\\gehl2\\Auto_align_program\\klayout_point_align\\aligner.py\")",
       "Bash(\"C:\\Users\\gehl2\\AppData\\Local\\Programs\\Python\\Python313\\python.exe\" -c:*)",
-      "Bash(py -m PyInstaller:*)"
+      "Bash(py -m PyInstaller:*)",
+      "Bash(taskkill:*)",
+      "Bash(nul)",
+      "Bash(tasklist:*)",
+      "Bash(findstr:*)",
+      "Bash(powershell:*)",
+      "Bash(py -c:*)",
+      "Bash(py -m py_compile:*)",
+      "Bash(move /Y \"dist\\PointAlign.exe\" \"dist\\PointAlign_old.exe\" 2)"
     ],
     "deny": [],
     "ask": []
