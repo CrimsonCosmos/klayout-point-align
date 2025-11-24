@@ -122,6 +122,7 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.image_path = image_path
         self.available_presets = available_presets
         self.selected_coordinates = ""  # Will store the 4 clicked points
+        self.lys_file = None  # Will store the .lys file path after alignment
         self._build_ui()
 
     def _build_ui(self):
@@ -205,6 +206,15 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.rms_indicator.setToolTip("Alignment quality (RMS error)")
         self.rms_indicator.hide()  # Hidden until first alignment
         landmark_row.addWidget(self.rms_indicator)
+
+        # Flip Y-axis button (mirror image vertically)
+        self.flip_button = QtWidgets.QPushButton("⇅ Flip Y")
+        self.flip_button.setToolTip("Flip image vertically (mirror at x-axis)")
+        self.flip_button.setMaximumWidth(80)
+        self.flip_button.setMaximumHeight(24)
+        self.flip_button.clicked.connect(self._on_flip_y_axis)
+        self.flip_button.hide()  # Hidden until first alignment
+        landmark_row.addWidget(self.flip_button)
 
         landmark_row.addStretch(3)
 
@@ -311,6 +321,45 @@ class ImageStripWidget(QtWidgets.QWidget):
         )
         self.rms_indicator.setToolTip(f"Alignment quality: RMS error = {rms_um:.3f} µm")
         self.rms_indicator.show()
+
+        # Also show the flip button when alignment is done
+        self.flip_button.show()
+
+    def set_lys_file(self, lys_file: str):
+        """Set the LYS file path for this image (called after alignment completes)."""
+        self.lys_file = lys_file
+
+    def _on_flip_y_axis(self):
+        """Handle flip Y-axis button click."""
+        if not self.lys_file:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "No LYS File",
+                "Cannot flip image: No .lys file has been created yet.\n\nPlease run alignment first."
+            )
+            return
+
+        # Import the flip function
+        from klayout_point_align.lys_io import flip_image_y_axis_in_lys
+
+        # Flip the image in the LYS file
+        success = flip_image_y_axis_in_lys(self.lys_file, self.image_path)
+
+        if success:
+            QtWidgets.QMessageBox.information(
+                self,
+                "Image Flipped",
+                f"Successfully flipped image vertically in:\n{self.lys_file}\n\n"
+                "Please reload the .lys file in KLayout to see the changes.\n\n"
+                "You can flip again to restore the original orientation."
+            )
+        else:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Flip Failed",
+                f"Failed to flip image in .lys file.\n\n"
+                "Image may not be present in the file, or the file may be corrupted."
+            )
 
     def _show_image_preview(self):
         """Show a larger preview of the image in a dialog."""
@@ -457,10 +506,10 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
 
             # If this is the Default preset, add the help button first
             if name == self.preset_manager.DEFAULT_PRESET_NAME:
-                self.btn_help = QtWidgets.QPushButton("❓")
+                self.btn_help = QtWidgets.QPushButton("?")
                 self.btn_help.setToolTip("Show/hide reference image for Default landmark preset")
                 self.btn_help.setFixedSize(25, 25)
-                self.btn_help.setStyleSheet("color: #2196F3; font-weight: bold; font-size: 14px;")
+                self.btn_help.setStyleSheet("color: #2196F3; font-weight: bold; font-size: 16px;")
                 self.btn_help.clicked.connect(self._toggle_reference_image)
                 row_layout.addWidget(self.btn_help)
 
@@ -762,7 +811,8 @@ class SessionWidget(QtWidgets.QGroupBox):
     closeRequested = QtCore.Signal(object)  # emits self when close is requested
 
     def __init__(self, session_name: str, lys_path: Optional[Path], preset_manager: LandmarkPresetManager, gds_manager: GDSPresetManager, parent: Optional[QtWidgets.QWidget] = None):
-        super().__init__(session_name, parent)
+        # Use empty title for QGroupBox - we'll create custom title with rename button
+        super().__init__("", parent)
         self.session_name = session_name
         self.lys_path = lys_path
         self.preset_manager = preset_manager
@@ -782,6 +832,30 @@ class SessionWidget(QtWidgets.QGroupBox):
     def _build_ui(self):
         """Build UI for this session."""
         layout = QtWidgets.QVBoxLayout(self)
+
+        # Custom title row with session name and rename button
+        title_row = QtWidgets.QHBoxLayout()
+
+        self.session_label = QtWidgets.QLabel(self.session_name)
+        title_font = self.session_label.font()
+        title_font.setPointSize(12)
+        title_font.setBold(True)
+        self.session_label.setFont(title_font)
+        self.session_label.setStyleSheet("color: #2196F3;")
+        title_row.addWidget(self.session_label)
+
+        # Rename button
+        self.btn_rename = QtWidgets.QPushButton("✎ Rename")
+        self.btn_rename.setToolTip("Rename this session (renames .lys file on Desktop)")
+        self.btn_rename.setMaximumWidth(90)
+        self.btn_rename.clicked.connect(self._on_rename_session)
+        title_row.addWidget(self.btn_rename)
+
+        title_row.addStretch(1)
+        layout.addLayout(title_row)
+
+        # Add small spacing after title
+        layout.addSpacing(8)
 
         # Control row: Add button, Select All, Clear, Pick Selected
         controls_row = QtWidgets.QHBoxLayout()
@@ -1024,6 +1098,92 @@ class SessionWidget(QtWidgets.QGroupBox):
         if reply == QtWidgets.QMessageBox.StandardButton.Yes:
             self.deleteRequested.emit(self)
 
+    def _on_rename_session(self):
+        """Handle rename session button click - renames the .lys file on Desktop."""
+        from diagnostic_logger import get_logger
+        logger = get_logger()
+
+        # Prompt for new name
+        new_name, ok = QtWidgets.QInputDialog.getText(
+            self,
+            "Rename Session",
+            f"Enter new name for this session:\n\n(Current: {self.session_name})",
+            QtWidgets.QLineEdit.EchoMode.Normal,
+            self.session_name
+        )
+
+        if not ok or not new_name or not new_name.strip():
+            return
+
+        new_name = new_name.strip()
+
+        # Ensure .lys extension
+        if not new_name.endswith('.lys'):
+            new_name += '.lys'
+
+        # Validate filename
+        new_name = sanitize_filename(new_name)
+        if not new_name:
+            QtWidgets.QMessageBox.warning(
+                self,
+                "Invalid Name",
+                "The name contains only invalid characters.\n\n"
+                "Please use a valid filename."
+            )
+            return
+
+        # Check if name is the same
+        if new_name == self.session_name:
+            return
+
+        # Check if file with new name already exists
+        old_path = Path.home() / "Desktop" / self.session_name
+        new_path = Path.home() / "Desktop" / new_name
+
+        if new_path.exists():
+            QtWidgets.QMessageBox.warning(
+                self,
+                "File Exists",
+                f"A file named '{new_name}' already exists on your Desktop.\n\n"
+                "Please choose a different name."
+            )
+            return
+
+        # Rename the file if it exists
+        try:
+            if old_path.exists():
+                old_path.rename(new_path)
+                logger.info(f"Renamed session from '{self.session_name}' to '{new_name}'")
+
+            # Update session name
+            old_session_name = self.session_name
+            self.session_name = new_name
+            self.lys_path = new_path
+
+            # Update UI label
+            self.session_label.setText(new_name)
+
+            # Update all image strips' lys_file references
+            for strip in self.image_strips.values():
+                if strip.lys_file and strip.lys_file.endswith(old_session_name):
+                    strip.lys_file = str(new_path)
+
+            QtWidgets.QMessageBox.information(
+                self,
+                "Session Renamed",
+                f"Session renamed successfully!\n\n"
+                f"Old name: {old_session_name}\n"
+                f"New name: {new_name}"
+            )
+
+        except Exception as e:
+            logger.log_exception(e, "renaming session")
+            QtWidgets.QMessageBox.critical(
+                self,
+                "Rename Failed",
+                f"Failed to rename session:\n{str(e)}"
+            )
+
     def _on_gds_changed(self):
         """Handle GDS dropdown change - update the .lys file with new GDS path."""
         import xml.etree.ElementTree as ET
@@ -1126,7 +1286,7 @@ class SessionWidget(QtWidgets.QGroupBox):
                 self.chk_select_all.setChecked(True)
 
     def _on_single_align(self, image_path: str, landmark_preset: str, output_file: str):
-        """Handle individual image Run button."""
+        """Handle individual image Run button - align directly without subprocess."""
         from diagnostic_logger import get_logger
         logger = get_logger()
 
@@ -1150,9 +1310,60 @@ class SessionWidget(QtWidgets.QGroupBox):
             # Always save to Desktop with session name
             output_file = str(Path.home() / "Desktop" / self.session_name)
 
-        # Build argv for single image
-        argv = self._build_argv_for_single(image_path, coords, output_file)
-        self.runRequested.emit(argv)
+        # Use direct alignment approach (no subprocess, no auto-review/picker)
+        try:
+            from klayout_point_align import align_markers, AlignConfig
+            from klayout_point_align.lys_io import reset_z_counter
+
+            # Reset z-counter for image layering
+            reset_z_counter()
+
+            # Parse coordinates
+            picked_points = parse_coordinates(strip.selected_coordinates)
+            target_points = parse_coordinates(coords)
+
+            # Create configuration
+            cfg = AlignConfig(
+                after_pts_um=target_points,
+                affine_only=True,
+                rms_thresh_um=0.5,
+                after_origin_um=(0.0, 0.0)
+            )
+
+            # Use template as input
+            lys_in = str(resource_path("Test_with_img.lys"))
+
+            # Run alignment
+            H, rms_error = align_markers(
+                before_ctr_px=picked_points,
+                cfg=cfg,
+                lys_in=lys_in,
+                lys_out=output_file,
+                image_file=image_path,
+                gds_file=self.get_selected_gds_path()
+            )
+
+            # Update RMS indicator
+            strip.update_rms_indicator(rms_error)
+
+            # Set LYS file path for flip button
+            strip.set_lys_file(output_file)
+
+            # Trigger wave animation
+            if hasattr(self, 'wave_widget') and self.wave_widget:
+                self.wave_widget.trigger_alignment_animation()
+
+            # Only show success message if this wasn't auto-triggered (user clicked Run button)
+            # Don't show message for auto-run from preset change
+            # Check if this was a manual trigger by seeing if output_file was "auto"
+            # (auto-run always uses "auto", manual Run might specify a file)
+
+        except Exception as e:
+            logger.log_exception(e, "running single image alignment")
+            QtWidgets.QMessageBox.critical(
+                self, "Alignment Error",
+                f"Failed to align image:\n{str(e)}"
+            )
 
     def _on_run_selected(self):
         """Handle Run Selected button - batch process selected images."""
@@ -1255,6 +1466,9 @@ class SessionWidget(QtWidgets.QGroupBox):
 
                 # Update RMS indicator for this image
                 strip.update_rms_indicator(rms_error)
+
+                # Set the LYS file path so flip button knows where to modify
+                strip.set_lys_file(output_file)
 
                 # After first image, use the output file as input for subsequent images
                 current_lys_in = output_file
@@ -1394,6 +1608,17 @@ class DebugWindow(QtWidgets.QDialog):
         self.log = QtWidgets.QTextEdit()
         self.log.setReadOnly(True)
         self.log.setToolTip("Alignment progress and debug output")
+
+        # Force a visible color scheme (white background, black text)
+        # This ensures text is always visible regardless of system theme
+        self.log.setStyleSheet("""
+            QTextEdit {
+                background-color: #ffffff;
+                color: #000000;
+                border: 1px solid #cccccc;
+            }
+        """)
+
         layout.addWidget(self.log)
 
         # Clear button
@@ -1407,6 +1632,10 @@ class AlignTab(QtWidgets.QWidget):
 
     def __init__(self, parent: Optional[QtWidgets.QWidget] = None):
         super().__init__(parent)
+
+        # Make background transparent so caustics can show through
+        self.setAttribute(QtCore.Qt.WidgetAttribute.WA_TranslucentBackground)
+        self.setAutoFillBackground(False)
 
         # Store preferences in a writable location
         import sys

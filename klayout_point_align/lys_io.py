@@ -237,3 +237,97 @@ def extract_alignment_metadata_from_lys(lys_file: str) -> dict[str, str]:
     except Exception as e:
         print(f"Error extracting alignment metadata from {lys_file}: {e}")
         return {}
+
+def flip_image_y_axis_in_lys(lys_file: str, image_path: str) -> bool:
+    """
+    Flip an image's y-axis in a .lys file by negating the y-transformation
+    and swapping top/bottom landmarks.
+
+    Args:
+        lys_file: Path to the .lys file to modify
+        image_path: Path to the specific image to flip
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        xml_text = Path(lys_file).read_text(encoding="utf-8")
+        root = ET.fromstring(xml_text)
+
+        # Normalize image path for comparison
+        image_path_normalized = Path(image_path).as_posix()
+
+        # Find the annotation for this specific image
+        for ann in root.iter("annotation"):
+            class_elem = ann.find("class")
+            if class_elem is not None and class_elem.text == "img::Object":
+                value_elem = ann.find("value")
+                if value_elem is None or not value_elem.text:
+                    continue
+
+                value_str = value_elem.text
+
+                # Check if this is the right image
+                if "file='" not in value_str:
+                    continue
+
+                start = value_str.index("file='") + 6
+                end = value_str.index("'", start)
+                file_path = value_str[start:end].replace('\\\\', '\\')
+                file_path_normalized = Path(file_path).as_posix()
+
+                if file_path_normalized != image_path_normalized:
+                    continue
+
+                # Use regex to find and replace specific parts without breaking structure
+                import re
+
+                # 1. Find and flip the matrix
+                matrix_pattern = r'matrix=\(([^)]+)\)\s+\(([^)]+)\)\s+\(([^)]+)\)'
+                matrix_match = re.search(matrix_pattern, value_str)
+                if matrix_match:
+                    row0_str, row1_str, row2_str = matrix_match.groups()
+
+                    # Parse row 1 (y-transformation)
+                    row1 = [float(x) for x in row1_str.split(',')]
+                    # Flip y-axis: negate row 1
+                    row1_flipped = [-x for x in row1]
+
+                    # Format the flipped row
+                    row1_new_str = ','.join(f'{x:.12g}' for x in row1_flipped)
+
+                    # Replace only the second row in the matrix
+                    new_matrix = f'matrix=({row0_str}) ({row1_new_str}) ({row2_str})'
+                    value_str = value_str[:matrix_match.start()] + new_matrix + value_str[matrix_match.end():]
+
+                # 2. Find and flip the landmarks (swap top<->bottom)
+                landmarks_pattern = r'landmarks=\[([^\]]+)\]'
+                landmarks_match = re.search(landmarks_pattern, value_str)
+                if landmarks_match:
+                    coords_str = landmarks_match.group(1)
+                    coords = [float(x) for x in coords_str.split(',')]
+                    if len(coords) == 8:
+                        tlx, tly, trx, try_, brx, bry, blx, bly = coords
+                        # Swap top <-> bottom: TL<->BL, TR<->BR
+                        new_landmarks = [blx, bly, brx, bry, trx, try_, tlx, tly]
+                        new_landmarks_str = ','.join(f'{x:.12g}' for x in new_landmarks)
+
+                        # Replace landmarks
+                        new_landmarks_full = f'landmarks=[{new_landmarks_str}]'
+                        value_str = value_str[:landmarks_match.start()] + new_landmarks_full + value_str[landmarks_match.end():]
+
+                # Update the XML
+                value_elem.text = value_str
+
+                # Save the modified LYS file
+                Path(lys_file).write_text(ET.tostring(root, encoding="unicode"), encoding="utf-8")
+                return True
+
+        # Image not found in LYS file
+        return False
+
+    except Exception as e:
+        print(f"Error flipping image in {lys_file}: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
