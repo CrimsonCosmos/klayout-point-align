@@ -4,6 +4,7 @@ from __future__ import annotations
 from pathlib import Path
 from typing import List, Optional, Tuple, Dict
 import re
+import sys
 import xml.etree.ElementTree as ET
 from copy import deepcopy
 import os
@@ -158,7 +159,12 @@ class _SingleLYSEditor(QtWidgets.QWidget):
         self._has_unsaved_changes = False
 
         # Create default save directory
-        self._default_save_dir = Path(__file__).parent / "lys_sessions"
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle - save next to .exe
+            self._default_save_dir = Path(sys.executable).parent / "lys_sessions"
+        else:
+            # Running as script - use project directory
+            self._default_save_dir = Path(__file__).parent / "lys_sessions"
         self._default_save_dir.mkdir(exist_ok=True)
 
         self._build_ui()

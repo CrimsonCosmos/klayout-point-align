@@ -112,7 +112,15 @@ class DiagnosticLogger:
         ]
 
         for filename in required_files:
-            filepath = Path(__file__).parent / filename
+            # In frozen mode, bundled files are in _MEIPASS
+            if getattr(sys, 'frozen', False):
+                if hasattr(sys, '_MEIPASS'):
+                    filepath = Path(sys._MEIPASS) / filename
+                else:
+                    filepath = Path(sys.executable).parent / filename
+            else:
+                filepath = Path(__file__).parent / filename
+
             if filepath.exists():
                 self.logger.info(f"  ✓ {filename}: Found at {filepath}")
             else:

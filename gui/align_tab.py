@@ -4,14 +4,18 @@
 
 from __future__ import annotations
 import datetime
+import sys
+import re
 from pathlib import Path
-from typing import List, Optional, Dict
+from typing import List, Optional, Dict, Tuple
 import json
+import shutil
 
 from qt_compat import QtCore, QtGui, QtWidgets
 from diagnostic_logger import get_logger
 from landmark_presets import LandmarkPresetManager
 from gds_presets import GDSPresetManager
+from utils import resource_path
 
 # ---- Constants mirrored from the legacy main ----
 APP_TITLE = "Point Align v1.1"
@@ -27,14 +31,6 @@ GDS_BASENAME = "Test.GDS"
 
 DEFAULT_AFTER_POINTS = "(-50,60),(70,60),(-50,-60),(70,-60)"  # TL, TR, BL, BR (µm)
 ALWAYS_AUTO_REVIEW = True
-
-from functools import lru_cache
-import re
-
-@lru_cache(maxsize=8)
-def resource_path(rel_path: str) -> Path:
-    base = Path(getattr(__import__("sys").modules["sys"], "_MEIPASS", Path(__file__).resolve().parent.parent))
-    return base / rel_path
 
 def sanitize_filename(name: str) -> str:
     """Remove invalid filename characters for Windows."""
@@ -79,12 +75,23 @@ def validate_preset_name(name: str, parent_widget) -> str | None:
 
 def parse_coordinates(coord_str: str) -> List[Tuple[float, float]]:
     """Parse coordinate string: '(-50,60),(70,60),(-50,-60),(70,-60)'"""
-    # Normalize Unicode minus signs to ASCII hyphen-minus
-    # U+2212 (MINUS SIGN), U+2013 (EN DASH), U+2014 (EM DASH)
-    coord_str = coord_str.replace('\u2212', '-')  # Unicode minus sign
-    coord_str = coord_str.replace('\u2013', '-')  # En dash
-    coord_str = coord_str.replace('\u2014', '-')  # Em dash
-    coord_str = coord_str.replace('−', '-')      # Another minus variant
+    # Normalize ALL Unicode dash/minus variants to ASCII hyphen-minus (U+002D)
+    # This handles various Unicode dashes that users might paste or type
+    dash_variants = [
+        '\u2212',  # U+2212 MINUS SIGN (−)
+        '\u2013',  # U+2013 EN DASH (–)
+        '\u2014',  # U+2014 EM DASH (—)
+        '\u2010',  # U+2010 HYPHEN (‐)
+        '\u2011',  # U+2011 NON-BREAKING HYPHEN
+        '\u2012',  # U+2012 FIGURE DASH
+        '\u2015',  # U+2015 HORIZONTAL BAR
+        '\uFE58',  # U+FE58 SMALL EM DASH
+        '\uFE63',  # U+FE63 SMALL HYPHEN-MINUS
+        '\uFF0D',  # U+FF0D FULLWIDTH HYPHEN-MINUS
+        '−',       # Another minus variant (may be duplicate of U+2212)
+    ]
+    for dash in dash_variants:
+        coord_str = coord_str.replace(dash, '-')
 
     # Use regex to extract all (x,y) pairs
     pattern = r'\(([^)]+)\)'
@@ -191,6 +198,7 @@ class ImageStripWidget(QtWidgets.QWidget):
         self.landmark_combo.setToolTip("GDS landmark preset (auto-runs when changed)")
         self.landmark_combo.setMinimumWidth(100)
         self.landmark_combo.setMaximumHeight(24)
+        self.landmark_combo.setMaxVisibleItems(50)  # Allow up to 50 items visible without scroll
         font = self.landmark_combo.font()
         font.setPointSize(8)
         self.landmark_combo.setFont(font)
@@ -296,7 +304,7 @@ class ImageStripWidget(QtWidgets.QWidget):
     def update_rms_indicator(self, rms_um: float):
         """Update the RMS quality indicator with color coding."""
         # Determine quality based on RMS error
-        if rms_um < 0.3:
+        if rms_um < 0.15:
             symbol = '✓ Excellent'
             color = '#00AA00'  # Green
             bg_color = '#E8F5E9'
@@ -391,6 +399,94 @@ class ImageStripWidget(QtWidgets.QWidget):
         dialog.exec()
 
 
+class LandmarkCoordinateDialog(QtWidgets.QDialog):
+    """Custom dialog for entering landmark coordinates with 8 separate input boxes."""
+
+    def __init__(self, parent=None, default_values=None):
+        super().__init__(parent)
+        self.setWindowTitle("Enter Landmark Coordinates")
+        self.setMinimumWidth(400)
+
+        # Default coordinates: (-50,60),(70,60),(-50,-60),(70,-60)
+        if default_values is None:
+            default_values = [(-50, 60), (70, 60), (-50, -60), (70, -60)]
+
+        layout = QtWidgets.QVBoxLayout(self)
+
+        # Instructions
+        instruction = QtWidgets.QLabel(
+            "Enter the 4 landmark coordinates.\n"
+            "These are the points in your GDS design where alignment markers are located."
+        )
+        instruction.setWordWrap(True)
+        layout.addWidget(instruction)
+
+        # Grid for coordinate inputs
+        grid = QtWidgets.QGridLayout()
+        grid.setSpacing(10)
+
+        # Create spinboxes for each coordinate
+        self.spinboxes = []
+        point_prefixes = ["TL", "TR", "BL", "BR"]  # Top-Left, Top-Right, Bottom-Left, Bottom-Right
+
+        for i in range(4):
+            prefix = point_prefixes[i]
+
+            # X coordinate
+            x_label = QtWidgets.QLabel(f"{prefix},x")
+            x_label.setStyleSheet("font-weight: bold;")
+            grid.addWidget(x_label, i, 0)
+
+            x_spin = QtWidgets.QDoubleSpinBox()
+            x_spin.setRange(-10000, 10000)
+            x_spin.setDecimals(3)
+            x_spin.setValue(default_values[i][0])
+            x_spin.setSuffix(" µm")
+            x_spin.setMinimumWidth(120)
+            grid.addWidget(x_spin, i, 1)
+
+            # Y coordinate
+            y_label = QtWidgets.QLabel(f"{prefix},y")
+            y_label.setStyleSheet("font-weight: bold;")
+            grid.addWidget(y_label, i, 2)
+
+            y_spin = QtWidgets.QDoubleSpinBox()
+            y_spin.setRange(-10000, 10000)
+            y_spin.setDecimals(3)
+            y_spin.setValue(default_values[i][1])
+            y_spin.setSuffix(" µm")
+            y_spin.setMinimumWidth(120)
+            grid.addWidget(y_spin, i, 3)
+
+            self.spinboxes.append((x_spin, y_spin))
+
+        layout.addLayout(grid)
+
+        # Buttons
+        button_layout = QtWidgets.QHBoxLayout()
+        button_layout.addStretch()
+
+        btn_ok = QtWidgets.QPushButton("OK")
+        btn_ok.clicked.connect(self.accept)
+        btn_ok.setDefault(True)
+        button_layout.addWidget(btn_ok)
+
+        btn_cancel = QtWidgets.QPushButton("Cancel")
+        btn_cancel.clicked.connect(self.reject)
+        button_layout.addWidget(btn_cancel)
+
+        layout.addLayout(button_layout)
+
+    def get_coordinates_string(self) -> str:
+        """Return the coordinates in the required format: (x1,y1),(x2,y2),(x3,y3),(x4,y4)"""
+        coords = []
+        for x_spin, y_spin in self.spinboxes:
+            x = x_spin.value()
+            y = y_spin.value()
+            coords.append(f"({x},{y})")
+        return ",".join(coords)
+
+
 class PresetManagerWidget(QtWidgets.QGroupBox):
     """Widget for managing landmark presets at the bottom of the UI."""
 
@@ -424,14 +520,9 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         self.preset_layout.setContentsMargins(0, 0, 0, 0)
         self.preset_layout.setSpacing(2)
 
-        # Scroll area for presets
-        scroll = QtWidgets.QScrollArea()
-        scroll.setWidget(self.preset_container)
-        scroll.setWidgetResizable(True)
-        scroll.setMaximumHeight(120)
-
+        # No scroll area - let presets stretch vertically
         self._refresh_preset_list()
-        list_section.addWidget(scroll)
+        list_section.addWidget(self.preset_container)
         controls_layout.addLayout(list_section, 2)
 
         # Buttons
@@ -506,10 +597,10 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
 
             # If this is the Default preset, add the help button first
             if name == self.preset_manager.DEFAULT_PRESET_NAME:
-                self.btn_help = QtWidgets.QPushButton("?")
+                self.btn_help = QtWidgets.QPushButton("Help")
                 self.btn_help.setToolTip("Show/hide reference image for Default landmark preset")
-                self.btn_help.setFixedSize(25, 25)
-                self.btn_help.setStyleSheet("color: #2196F3; font-weight: bold; font-size: 16px;")
+                self.btn_help.setFixedSize(50, 25)
+                self.btn_help.setStyleSheet("color: #2196F3; font-weight: bold; font-size: 10px;")
                 self.btn_help.clicked.connect(self._toggle_reference_image)
                 row_layout.addWidget(self.btn_help)
 
@@ -536,32 +627,15 @@ class PresetManagerWidget(QtWidgets.QGroupBox):
         if not name:
             return
 
-        coords, ok = QtWidgets.QInputDialog.getText(
-            self, "Add Preset",
-            f"Enter coordinates for '{name}':\n(Format: (x1,y1),(x2,y2),(x3,y3),(x4,y4))",
-            text="(-50,60),(70,60),(-50,-60),(70,-60)"
-        )
-        if not ok or not coords.strip():
+        # Show custom coordinate dialog
+        coord_dialog = LandmarkCoordinateDialog(self)
+        if coord_dialog.exec() != QtWidgets.QDialog.DialogCode.Accepted:
             return
 
-        # Validate format before trying to add
-        from landmark_presets import LandmarkPresetManager
-        if not LandmarkPresetManager.validate_coordinates(coords.strip()):
-            QtWidgets.QMessageBox.critical(
-                self,
-                "Invalid Format",
-                "Coordinates must be in the format:\n"
-                "(x1,y1),(x2,y2),(x3,y3),(x4,y4)\n\n"
-                "Example: (-50,60),(70,60),(-50,-60),(70,-60)\n\n"
-                "Requirements:\n"
-                "• Exactly 4 coordinate pairs\n"
-                "• Each pair in parentheses: (x,y)\n"
-                "• Pairs separated by commas\n"
-                "• Numbers can be positive/negative integers or decimals"
-            )
-            return
+        # Get the coordinates string from the dialog
+        coords = coord_dialog.get_coordinates_string()
 
-        if self.preset_manager.add_preset(name, coords.strip()):
+        if self.preset_manager.add_preset(name, coords):
             self._refresh_preset_list()
             self.presetsChanged.emit()
             QtWidgets.QMessageBox.information(self, "Success", f"Preset '{name}' added!")
@@ -645,14 +719,9 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
         self.preset_layout.setContentsMargins(0, 0, 0, 0)
         self.preset_layout.setSpacing(2)
 
-        # Scroll area for presets
-        scroll = QtWidgets.QScrollArea()
-        scroll.setWidget(self.preset_container)
-        scroll.setWidgetResizable(True)
-        scroll.setMaximumHeight(120)
-
+        # No scroll area - let GDS presets stretch vertically
         self._refresh_preset_list()
-        list_section.addWidget(scroll)
+        list_section.addWidget(self.preset_container)
         controls_layout.addLayout(list_section, 2)
 
         # Buttons
@@ -776,11 +845,14 @@ class GDSPresetManagerWidget(QtWidgets.QGroupBox):
 
         # Resolve relative paths to absolute
         if not Path(gds_path).is_absolute():
-            # Try relative to project directory
-            project_root = Path(__file__).parent.parent
-            full_path = project_root / gds_path
-            if not full_path.exists():
-                # Try relative to current working directory
+            # Try relative to bundled resources (PyInstaller-aware)
+            try:
+                full_path = resource_path(gds_path)
+                if not full_path.exists():
+                    # Try relative to current working directory
+                    full_path = Path(gds_path).resolve()
+            except Exception:
+                # If resource_path fails, try current working directory
                 full_path = Path(gds_path).resolve()
         else:
             full_path = Path(gds_path)
@@ -920,6 +992,7 @@ class SessionWidget(QtWidgets.QGroupBox):
         self.gds_combo.addItems(self.gds_manager.get_preset_names())
         # Default to the first preset (which is [Default - Test.GDS])
         self.gds_combo.setCurrentIndex(0)
+        self.gds_combo.setMaxVisibleItems(50)  # Allow up to 50 items visible without scroll
         self.gds_combo.currentTextChanged.connect(self._on_gds_changed)
         gds_row.addWidget(self.gds_combo, 1)
 
@@ -1185,7 +1258,7 @@ class SessionWidget(QtWidgets.QGroupBox):
             )
 
     def _on_gds_changed(self):
-        """Handle GDS dropdown change - update the .lys file with new GDS path."""
+        """Handle GDS dropdown change - update the .lys file with new GDS path and re-align images."""
         import xml.etree.ElementTree as ET
         from diagnostic_logger import get_logger
         logger = get_logger()
@@ -1214,6 +1287,14 @@ class SessionWidget(QtWidgets.QGroupBox):
             # Write back to file
             tree.write(str(desktop_path), encoding='utf-8', xml_declaration=True)
             logger.info(f"Updated GDS file in {self.session_name} to: {selected_gds}")
+
+            # Re-align all images that have coordinates to update them with the new GDS
+            for img_path, strip in self.image_strips.items():
+                if strip.selected_coordinates:
+                    # Trigger re-alignment for this image
+                    logger.info(f"Re-aligning {Path(img_path).name} with new GDS preset")
+                    strip._auto_run_if_ready()
+
         except Exception as e:
             logger.log_exception(e, f"updating GDS file in {self.session_name}")
 
@@ -1238,7 +1319,6 @@ class SessionWidget(QtWidgets.QGroupBox):
 
     def get_selected_gds_path(self) -> str:
         """Get the GDS file path for the currently selected preset."""
-        from gui.runner import resource_path
         preset_name = self.gds_combo.currentText()
         gds_path = self.gds_manager.get_gds_path(preset_name)
 
@@ -1330,8 +1410,11 @@ class SessionWidget(QtWidgets.QGroupBox):
                 after_origin_um=(0.0, 0.0)
             )
 
-            # Use template as input
-            lys_in = str(resource_path("Test_with_img.lys"))
+            # Check if output file already exists; if so, append to it instead of overwriting
+            if Path(output_file).exists():
+                lys_in = output_file  # Read existing file to append new image
+            else:
+                lys_in = str(resource_path("Test_with_img.lys"))  # Use template for first image
 
             # Run alignment
             H, rms_error = align_markers(
@@ -1376,19 +1459,17 @@ class SessionWidget(QtWidgets.QGroupBox):
                 "Please select at least one image to align.")
             return
 
-        # Launch picker only for images without coordinates
+        # Launch picker for all selected images (allows re-picking existing coordinates)
         for img_path in selected:
             strip = self.image_strips.get(img_path)
             if strip:
-                # Skip picker if coordinates are already set
-                if strip.selected_coordinates:
-                    logger.info(f"Skipping picker for {Path(img_path).name} - coordinates already set")
-                    continue
-
-                # Auto-launch picker for this image (no coordinates yet)
+                # Auto-launch picker for this image
                 try:
                     from klayout_point_align.picker import pick_points_gui
-                    logger.info(f"Launching picker for {Path(img_path).name}")
+                    if strip.selected_coordinates:
+                        logger.info(f"Re-picking coordinates for {Path(img_path).name} (overwriting existing)")
+                    else:
+                        logger.info(f"Launching picker for {Path(img_path).name}")
 
                     points = pick_points_gui(img_path, max_points=4)
 
@@ -1479,11 +1560,6 @@ class SessionWidget(QtWidgets.QGroupBox):
                 self.wave_widget.trigger_alignment_animation()
             else:
                 print("DEBUG: Wave widget not found or not set")
-
-            QtWidgets.QMessageBox.information(
-                self, "Alignment Complete",
-                f"Successfully aligned {len(selected)} image(s).\n\nOutput: {output_file}"
-            )
 
         except Exception as e:
             logger.log_exception(e, "running alignment")
@@ -1713,7 +1789,6 @@ class AlignTab(QtWidgets.QWidget):
     def _create_new_session(self):
         """Create a new session with auto-generated name."""
         import getpass
-        import shutil
         self._session_counter += 1
 
         # Get username (e.g., "Dylan", "John", etc.)
@@ -1724,6 +1799,10 @@ class AlignTab(QtWidgets.QWidget):
 
         session_name = f"Aligned{self._session_counter}By{username}.lys"
         session = SessionWidget(session_name, None, self.preset_manager, self.gds_manager, self)
+
+        # Pass wave widget reference to session for animation triggers
+        if hasattr(self, 'wave_widget'):
+            session.wave_widget = self.wave_widget
 
         # Wire up the session's signals
         session.runRequested.connect(self._on_session_run_requested)
@@ -1739,7 +1818,7 @@ class AlignTab(QtWidgets.QWidget):
 
         # Create empty .lys file on Desktop immediately
         desktop_path = Path.home() / "Desktop" / session_name
-        template_path = Path(__file__).parent.parent / "Test_with_img.lys"
+        template_path = resource_path("Test_with_img.lys")
         try:
             import xml.etree.ElementTree as ET
 
@@ -1773,6 +1852,10 @@ class AlignTab(QtWidgets.QWidget):
         lys_path = Path(path)
         session_name = lys_path.name
         session = SessionWidget(session_name, lys_path, self.preset_manager, self.gds_manager, self)
+
+        # Pass wave widget reference to session for animation triggers
+        if hasattr(self, 'wave_widget'):
+            session.wave_widget = self.wave_widget
 
         # Wire up the session's signals
         session.runRequested.connect(self._on_session_run_requested)
@@ -1890,7 +1973,7 @@ class AlignTab(QtWidgets.QWidget):
 
     def _get_quality_indicator(self, rms_um: float) -> dict:
         """Return quality indicator based on RMS error in micrometers."""
-        if rms_um < 0.3:
+        if rms_um < 0.15:
             return {'symbol': '✓ Excellent', 'color': QtGui.QColor('#00AA00')}  # Green
         elif rms_um < 0.5:
             return {'symbol': '✓ Good', 'color': QtGui.QColor('#88AA00')}  # Yellow-green

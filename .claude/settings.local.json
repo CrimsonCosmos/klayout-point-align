@@ -3,7 +3,10 @@
     "allow": [
       "*",
       "Bash(py -m py_compile:*)",
-      "Bash(py -m PyInstaller:*)"
+      "Bash(py -m PyInstaller:*)",
+      "Bash(py -c:*)",
+      "Bash(cat:*)",
+      "Bash(py -m pip:*)"
     ],
     "deny": [],
     "ask": []

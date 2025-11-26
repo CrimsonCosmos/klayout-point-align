@@ -2,11 +2,12 @@
 # Alternative spec for ONE-FOLDER distribution (faster startup)
 from PyInstaller.utils.hooks import collect_all
 
-datas = [('Test_with_img.lys', '.'), ('Test.GDS', '.'), ('point_align_batch_runner_gui.py', '.'), ('example_points_for_manual.png', '.')]
+datas = [('Test_with_img.lys', '.'), ('Test.GDS', '.'), ('point_align_batch_runner_gui.py', '.'), ('example_points_for_manual.png', '.'), ('utils.py', '.'), ('water_caustics_widget.py', '.')]
 binaries = []
 hiddenimports = ['PySide6.QtCore', 'PySide6.QtGui', 'PySide6.QtWidgets',
                  'shiboken6', 'point_align_batch_runner_gui',
-                 'numpy._core._multiarray_umath', 'cv2', 'runpy']
+                 'numpy._core._multiarray_umath', 'cv2', 'runpy',
+                 'utils', 'water_caustics_widget']
 
 # Only collect what we need
 tmp_ret = collect_all('shiboken6')

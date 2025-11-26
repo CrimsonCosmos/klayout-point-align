@@ -38,7 +38,7 @@ class _ImagePickerWidget(object):
       - S: save (must have exactly max_points)
       - Q or Esc: cancel without saving
       - Mouse wheel / trackpad: zoom (under mouse)
-      - Hold Space (or middle mouse): pan
+      - Right-click, middle-click, or Space+drag: pan
       - F: fit image to window
       - R: reset zoom (100%)
 
@@ -66,7 +66,18 @@ class _ImagePickerWidget(object):
         # ---- Dialog instead of QMainWindow ----
         self.dialog = QtWidgets.QDialog()
         self.dialog.setWindowTitle(f"Point Picker — {Path(img_path).name}")
-        self.dialog.resize(1200, 850)
+
+        # Size window to fit available screen space (accounting for taskbar)
+        screen = self.app.primaryScreen()
+        if screen:
+            available_geom = screen.availableGeometry()  # Excludes taskbar
+            # Use 95% of available height and 90% of width, with max constraints
+            target_width = min(1200, int(available_geom.width() * 0.9))
+            target_height = min(850, int(available_geom.height() * 0.95))
+            self.dialog.resize(target_width, target_height)
+        else:
+            self.dialog.resize(1200, 850)
+
         self.dialog.keyPressEvent = self._on_key
         self.dialog.keyReleaseEvent = self._on_key_release
 
@@ -91,7 +102,7 @@ class _ImagePickerWidget(object):
         # ---- Status label (instead of statusBar) ----
         self.status_label = QtWidgets.QLabel()
         self.status_label.setWordWrap(True)
-        self.status_label.setStyleSheet("padding: 4px; background-color: #f0f0f0;")
+        self.status_label.setStyleSheet("padding: 4px; background-color: #f0f0f0; font-size: 9pt;")
         layout.addWidget(self.status_label)
         self._update_status()
 
@@ -200,7 +211,7 @@ class _ImagePickerWidget(object):
 
     def _on_mouse_press(self, event):
         QtCore = self._QtCore
-        if event.button() == QtCore.Qt.MiddleButton or (event.button() == QtCore.Qt.LeftButton and self._panning_with_space):
+        if event.button() == QtCore.Qt.RightButton or event.button() == QtCore.Qt.MiddleButton or (event.button() == QtCore.Qt.LeftButton and self._panning_with_space):
             self.view.setDragMode(self._QtWidgets.QGraphicsView.ScrollHandDrag)
             self.view.viewport().setCursor(QtCore.Qt.ClosedHandCursor)
             return self._QtWidgets.QGraphicsView.mousePressEvent(self.view, event)

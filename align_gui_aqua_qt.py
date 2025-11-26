@@ -5,19 +5,13 @@ from __future__ import annotations
 import sys
 import json
 from pathlib import Path
-from functools import lru_cache
 from qt_compat import QtCore, QtGui, QtWidgets
 
 from gui.align_tab import AlignTab
 from gui.runner import ExternalRunner
 from diagnostic_logger import init_logger
 from water_caustics_widget import FullWindowCausticsOverlay
-
-@lru_cache(maxsize=8)
-def resource_path(rel_path: str) -> Path:
-    """Return absolute path to bundled resource (PyInstaller-safe)."""
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent))
-    return base / rel_path
+from utils import resource_path
 
 APP_TITLE = "Point Align v1.2"
 
@@ -577,8 +571,8 @@ class CosineWaveWidget(QtWidgets.QWidget):
 
                 self.phase_offset += self.base_phase_increment * self.current_speed
 
-                # Check if we've stopped
-                if self.phase_offset >= (2 * 3.14159) and self.current_speed < 0.05:
+                # Check if deceleration has completed
+                if decel_elapsed >= self.triggered_acceleration_duration:
                     self.phase_offset = 0.0
                     self.current_speed = 0.0
                     self.is_returning = False
@@ -734,6 +728,7 @@ class AquaHeader(QtWidgets.QWidget):
         # Position wave widget in top-left with padding
         wave_y = (self.height() - 32) // 2
         self.wave_widget.move(16, wave_y)
+        self.wave_widget.raise_()  # Ensure wave widget is on top within header
 
     def paintEvent(self, e):
         p = QtGui.QPainter(self)
@@ -770,7 +765,16 @@ class MainWin(QtWidgets.QMainWindow):
         super().__init__()
         self.setWindowTitle(APP_TITLE)
         self.resize(1100, 840)
-        self._prefs_file = Path(__file__).parent / "gui_prefs.json"
+
+        # Preferences file location (same directory as executable when frozen)
+        if getattr(sys, 'frozen', False):
+            # Running as PyInstaller bundle - save prefs next to .exe
+            prefs_dir = Path(sys.executable).parent
+        else:
+            # Running as script - use project directory
+            prefs_dir = Path(__file__).parent
+        self._prefs_file = prefs_dir / "gui_prefs.json"
+
         self._dark_mode = False
         self._fancy_mode = False
 

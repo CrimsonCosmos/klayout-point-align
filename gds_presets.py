@@ -15,7 +15,13 @@ class GDSPresetManager:
 
     def __init__(self, presets_file: Path = None):
         if presets_file is None:
-            presets_file = Path(__file__).parent / "gds_presets.json"
+            import sys
+            if getattr(sys, 'frozen', False):
+                # Running as PyInstaller bundle - save next to .exe
+                presets_file = Path(sys.executable).parent / "gds_presets.json"
+            else:
+                # Running as script - use project directory
+                presets_file = Path(__file__).parent / "gds_presets.json"
         self.presets_file = presets_file
         self.presets: Dict[str, str] = {}  # name -> file_path
         self.load()

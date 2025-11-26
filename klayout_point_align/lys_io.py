@@ -44,6 +44,54 @@ def build_klayout_img_value(H_um_from_px: np.ndarray,
         f"file='{img_path}'"
     )
 
+def remove_image_from_lys(root: ET.Element, image_file: str) -> int:
+    """
+    Remove all img::Object annotations for a specific image file from the LYS XML root.
+
+    Args:
+        root: The XML root element of the .lys file
+        image_file: Path to the image file to remove
+
+    Returns:
+        Number of annotations removed
+    """
+    removed_count = 0
+    # Normalize the image path for comparison (handle both / and \\ separators)
+    target_path = Path(image_file).as_posix()
+
+    # Find all annotations
+    for view in root.iter("view"):
+        anns = None
+        for el in view:
+            if el.tag == "annotations":
+                anns = el
+                break
+
+        if anns is None:
+            continue
+
+        # Find and remove annotations for this image
+        annotations_to_remove = []
+        for ann in anns.findall("annotation"):
+            class_elem = ann.find("class")
+            if class_elem is not None and class_elem.text == "img::Object":
+                value_elem = ann.find("value")
+                if value_elem is not None and value_elem.text:
+                    # Check if this annotation contains the target image file
+                    # The value contains: file='path/to/image.jpg'
+                    if f"file='{target_path}'" in value_elem.text or \
+                       f'file="{target_path}"' in value_elem.text or \
+                       target_path.replace('/', '\\\\') in value_elem.text:
+                        annotations_to_remove.append(ann)
+
+        # Remove the annotations
+        for ann in annotations_to_remove:
+            anns.remove(ann)
+            removed_count += 1
+
+    return removed_count
+
+
 def update_klayout_session(lys_in: str, lys_out: str,
                            image_file: str,
                            H_um_from_px: np.ndarray,
@@ -57,9 +105,18 @@ def update_klayout_session(lys_in: str, lys_out: str,
     Load a .lys file, ensure <annotations> exists, append an 'img::Object'.
     If gds_file is provided, also update <layout>/<file-path> and <layout>/<name>.
     Optionally adds alignment metadata as a custom XML element.
+
+    NOTE: If the same image already exists in the file, it will be removed first
+    to prevent duplicates when re-aligning with a different GDS preset.
     """
     xml_text = Path(lys_in).read_text(encoding="utf-8")
     root = ET.fromstring(xml_text)
+
+    # Remove any existing annotations for this image file to prevent duplicates
+    removed = remove_image_from_lys(root, image_file)
+    if removed > 0:
+        # Log that we removed duplicates (optional, for debugging)
+        pass
 
     # (1) Optional: update <layout> with a new GDS path
     if gds_file:

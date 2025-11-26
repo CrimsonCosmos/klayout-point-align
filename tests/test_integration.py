@@ -129,7 +129,7 @@ def test_resource_path_resolution():
     This is critical for PyInstaller - files like Test.GDS and Test_with_img.lys
     need to be found in the _MEIPASS directory when frozen.
     """
-    from gui.runner import resource_path
+    from utils import resource_path
 
     # Test a known bundled file
     test_files = [

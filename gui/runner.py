@@ -7,13 +7,7 @@ import os, sys, datetime, subprocess
 from pathlib import Path
 from qt_compat import QtCore
 from diagnostic_logger import get_logger
-from functools import lru_cache
-
-@lru_cache(maxsize=8)
-def resource_path(rel_path: str) -> Path:
-    """Return absolute path to bundled resource (PyInstaller-safe)."""
-    base = Path(getattr(sys, "_MEIPASS", Path(__file__).resolve().parent.parent))
-    return base / rel_path
+from utils import resource_path
 
 class ExternalRunner(QtCore.QThread):
     line_ready = QtCore.Signal(str)
@@ -130,6 +124,7 @@ class ExternalRunner(QtCore.QThread):
         self.started_with_cmd.emit(pretty_cmd + "\n")
         logger.log_process_start(cmd)
 
+        proc = None
         try:
             # CREATE_NO_WINDOW on Windows
             creationflags = 0x08000000 if os.name == "nt" else 0
@@ -157,6 +152,16 @@ class ExternalRunner(QtCore.QThread):
             error_msg = f"[ERROR] Failed to start external Python: {e}\n"
             logger.log_exception(e, "subprocess execution")
             self.line_ready.emit(error_msg)
+            # Clean up subprocess if it was started
+            if proc is not None:
+                try:
+                    proc.terminate()
+                    proc.wait(timeout=5)  # Wait up to 5 seconds for clean shutdown
+                except Exception:
+                    try:
+                        proc.kill()  # Force kill if terminate didn't work
+                    except Exception:
+                        pass
             self.finished_with_code.emit(1)
             return
 

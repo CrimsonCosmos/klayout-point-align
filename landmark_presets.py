@@ -15,7 +15,13 @@ class LandmarkPresetManager:
 
     def __init__(self, presets_file: Path = None):
         if presets_file is None:
-            presets_file = Path(__file__).parent / "landmark_presets.json"
+            import sys
+            if getattr(sys, 'frozen', False):
+                # Running as PyInstaller bundle - save next to .exe
+                presets_file = Path(sys.executable).parent / "landmark_presets.json"
+            else:
+                # Running as script - use project directory
+                presets_file = Path(__file__).parent / "landmark_presets.json"
         self.presets_file = presets_file
         self.presets: Dict[str, str] = {}
         self.load()
@@ -93,11 +99,13 @@ class LandmarkPresetManager:
         coords = coords.replace('−', '-')      # Another minus variant
 
         # Remove all whitespace for easier parsing
-        coords_clean = coords.replace(" ", "")
+        coords_clean = coords.replace(" ", "").replace("\t", "").replace("\n", "").replace("\r", "")
 
         # Pattern: exactly 4 coordinate pairs like (num,num),(num,num),(num,num),(num,num)
         # Numbers can be integers or floats, positive or negative
-        pattern = r'^\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\),\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\),\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\),\([-+]?\d+\.?\d*,[-+]?\d+\.?\d*\)$'
+        # Allow formats like: 50, -50, 50.5, -50.5, .5, -.5
+        number_pattern = r'[-+]?(?:\d+\.?\d*|\d*\.\d+)'
+        pattern = rf'^\({number_pattern},{number_pattern}\),\({number_pattern},{number_pattern}\),\({number_pattern},{number_pattern}\),\({number_pattern},{number_pattern}\)$'
 
         return bool(re.match(pattern, coords_clean))
 
