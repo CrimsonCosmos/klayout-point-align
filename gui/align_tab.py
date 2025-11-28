@@ -133,8 +133,14 @@ class ImageStripWidget(QtWidgets.QWidget):
         self._build_ui()
 
     def _build_ui(self):
-        layout = QtWidgets.QHBoxLayout(self)
-        layout.setContentsMargins(2, 2, 2, 2)
+        # Main vertical layout to hold controls row + collapsible panel
+        main_layout = QtWidgets.QVBoxLayout(self)
+        main_layout.setContentsMargins(2, 2, 2, 2)
+        main_layout.setSpacing(2)
+
+        # Horizontal layout for main controls (existing UI)
+        layout = QtWidgets.QHBoxLayout()
+        layout.setContentsMargins(0, 0, 0, 0)
         layout.setSpacing(6)
 
         # Checkbox
@@ -228,6 +234,11 @@ class ImageStripWidget(QtWidgets.QWidget):
 
         layout.addLayout(landmark_row)
 
+        # Add the horizontal controls layout to main layout
+        main_layout.addLayout(layout)
+
+        # Display adjustments removed - now handled in picker window
+
     def _create_thumbnail(self, img_path: str, size: int = 48) -> Optional[QtGui.QPixmap]:
         """Create a thumbnail pixmap from an image file."""
         try:
@@ -245,7 +256,7 @@ class ImageStripWidget(QtWidgets.QWidget):
         try:
             from klayout_point_align.picker import pick_points_gui
 
-            # Launch the picker - returns list of (cx, cy) tuples
+            # Launch the picker - returns list of points
             points = pick_points_gui(self.image_path, max_points=4)
 
             if points and len(points) == 4:
@@ -303,6 +314,21 @@ class ImageStripWidget(QtWidgets.QWidget):
 
     def update_rms_indicator(self, rms_um: float):
         """Update the RMS quality indicator with color coding."""
+        # Check if using default landmark
+        current_landmark = self.landmark_combo.currentText()
+
+        if current_landmark != "[Default]":
+            # For custom landmarks, just show "Custom landmark" instead of RMS
+            self.rms_indicator.setText("Custom landmark")
+            self.rms_indicator.setStyleSheet(
+                "padding: 2px 8px; border-radius: 3px; font-weight: bold; "
+                "color: #666666; background-color: #F5F5F5;"
+            )
+            self.rms_indicator.setToolTip("Using custom landmark coordinates")
+            self.rms_indicator.show()
+            return
+
+        # For default landmark, show RMS quality
         # Determine quality based on RMS error
         if rms_um < 0.15:
             symbol = '✓ Excellent'
@@ -332,6 +358,157 @@ class ImageStripWidget(QtWidgets.QWidget):
 
         # Also show the flip button when alignment is done
         self.flip_button.show()
+
+    def _add_display_adjustments_panel(self, main_layout):
+        """Add collapsible panel with brightness/contrast/gamma/RGB sliders."""
+        # Collapsible header button
+        self.display_adjust_button = QtWidgets.QPushButton("▶ Adjust Display Properties")
+        self.display_adjust_button.setStyleSheet("text-align: left; padding: 4px; font-size: 8pt;")
+        self.display_adjust_button.clicked.connect(self._toggle_display_adjustments)
+        main_layout.addWidget(self.display_adjust_button)
+
+        # Collapsible panel (hidden by default)
+        self.display_adjust_panel = QtWidgets.QWidget()
+        self.display_adjust_panel.setVisible(False)
+        adjust_layout = QtWidgets.QFormLayout(self.display_adjust_panel)
+        adjust_layout.setContentsMargins(20, 5, 5, 5)
+        adjust_layout.setSpacing(3)
+
+        # Helper function to create slider row
+        def create_slider_row(range_min, range_max, default_val, label_text="0"):
+            widget = QtWidgets.QWidget()
+            layout = QtWidgets.QHBoxLayout(widget)
+            layout.setContentsMargins(0, 0, 0, 0)
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(range_min, range_max)
+            slider.setValue(default_val)
+            label = QtWidgets.QLabel(label_text)
+            label.setMinimumWidth(40)
+            label.setAlignment(QtCore.Qt.AlignRight)
+            font = label.font()
+            font.setPointSize(8)
+            label.setFont(font)
+            layout.addWidget(slider)
+            layout.addWidget(label)
+            return widget, slider, label
+
+        # Brightness slider (-100 to 100)
+        bright_widget, self.brightness_slider, self.brightness_label = create_slider_row(-100, 100, 0, "0")
+        adjust_layout.addRow("Brightness:", bright_widget)
+
+        # Contrast slider (-100 to 100)
+        contrast_widget, self.contrast_slider, self.contrast_label = create_slider_row(-100, 100, 0, "0")
+        adjust_layout.addRow("Contrast:", contrast_widget)
+
+        # Gamma slider (30 to 300, representing 0.3 to 3.0)
+        gamma_widget, self.gamma_slider, self.gamma_label = create_slider_row(30, 300, 100, "1.00")
+        adjust_layout.addRow("Gamma:", gamma_widget)
+
+        # Red gain slider (0 to 200, representing 0.0 to 2.0)
+        red_widget, self.red_slider, self.red_label = create_slider_row(0, 200, 100, "1.00")
+        adjust_layout.addRow("Red Gain:", red_widget)
+
+        # Green gain slider (0 to 200, representing 0.0 to 2.0)
+        green_widget, self.green_slider, self.green_label = create_slider_row(0, 200, 100, "1.00")
+        adjust_layout.addRow("Green Gain:", green_widget)
+
+        # Blue gain slider (0 to 200, representing 0.0 to 2.0)
+        blue_widget, self.blue_slider, self.blue_label = create_slider_row(0, 200, 100, "1.00")
+        adjust_layout.addRow("Blue Gain:", blue_widget)
+
+        # Reset button
+        reset_btn = QtWidgets.QPushButton("Reset All")
+        reset_btn.setMaximumWidth(100)
+        font = reset_btn.font()
+        font.setPointSize(8)
+        reset_btn.setFont(font)
+        reset_btn.clicked.connect(self._reset_display_properties)
+        adjust_layout.addRow("", reset_btn)
+
+        main_layout.addWidget(self.display_adjust_panel)
+
+        # Connect sliders
+        self.brightness_slider.valueChanged.connect(self._on_brightness_changed)
+        self.contrast_slider.valueChanged.connect(self._on_contrast_changed)
+        self.gamma_slider.valueChanged.connect(self._on_gamma_changed)
+        self.red_slider.valueChanged.connect(self._on_red_changed)
+        self.green_slider.valueChanged.connect(self._on_green_changed)
+        self.blue_slider.valueChanged.connect(self._on_blue_changed)
+
+    def _toggle_display_adjustments(self):
+        """Toggle visibility of display adjustment panel."""
+        is_visible = self.display_adjust_panel.isVisible()
+        self.display_adjust_panel.setVisible(not is_visible)
+        arrow = "▼" if not is_visible else "▶"
+        self.display_adjust_button.setText(f"{arrow} Adjust Display Properties")
+
+    def _on_brightness_changed(self, value):
+        """Update brightness in .lys file."""
+        self.brightness_label.setText(str(value))
+        self._update_lys_properties()
+
+    def _on_contrast_changed(self, value):
+        """Update contrast in .lys file."""
+        self.contrast_label.setText(str(value))
+        self._update_lys_properties()
+
+    def _on_gamma_changed(self, value):
+        """Update gamma in .lys file."""
+        gamma = value / 100.0
+        self.gamma_label.setText(f"{gamma:.2f}")
+        self._update_lys_properties()
+
+    def _on_red_changed(self, value):
+        """Update red gain in .lys file."""
+        gain = value / 100.0
+        self.red_label.setText(f"{gain:.2f}")
+        self._update_lys_properties()
+
+    def _on_green_changed(self, value):
+        """Update green gain in .lys file."""
+        gain = value / 100.0
+        self.green_label.setText(f"{gain:.2f}")
+        self._update_lys_properties()
+
+    def _on_blue_changed(self, value):
+        """Update blue gain in .lys file."""
+        gain = value / 100.0
+        self.blue_label.setText(f"{gain:.2f}")
+        self._update_lys_properties()
+
+    def _update_lys_properties(self):
+        """Update .lys file with current slider values."""
+        if not self.lys_file or not self.image_path:
+            return
+
+        from klayout_point_align.lys_io import update_image_display_properties
+
+        brightness = self.brightness_slider.value()
+        contrast = self.contrast_slider.value()
+        gamma = self.gamma_slider.value() / 100.0
+        red_gain = self.red_slider.value() / 100.0
+        green_gain = self.green_slider.value() / 100.0
+        blue_gain = self.blue_slider.value() / 100.0
+
+        update_image_display_properties(
+            self.lys_file,
+            self.image_path,
+            brightness=brightness,
+            contrast=contrast,
+            gamma=gamma,
+            red_gain=red_gain,
+            green_gain=green_gain,
+            blue_gain=blue_gain
+        )
+
+    def _reset_display_properties(self):
+        """Reset all sliders to defaults."""
+        self.brightness_slider.setValue(0)
+        self.contrast_slider.setValue(0)
+        self.gamma_slider.setValue(100)
+        self.red_slider.setValue(100)
+        self.green_slider.setValue(100)
+        self.blue_slider.setValue(100)
 
     def set_lys_file(self, lys_file: str):
         """Set the LYS file path for this image (called after alignment completes)."""
@@ -1432,9 +1609,9 @@ class SessionWidget(QtWidgets.QGroupBox):
             # Set LYS file path for flip button
             strip.set_lys_file(output_file)
 
-            # Trigger wave animation
-            if hasattr(self, 'wave_widget') and self.wave_widget:
-                self.wave_widget.trigger_alignment_animation()
+            # Trigger wave animation (DISABLED)
+            # if hasattr(self, 'wave_widget') and self.wave_widget:
+            #     self.wave_widget.trigger_alignment_animation()
 
             # Only show success message if this wasn't auto-triggered (user clicked Run button)
             # Don't show message for auto-run from preset change
@@ -1554,12 +1731,12 @@ class SessionWidget(QtWidgets.QGroupBox):
                 # After first image, use the output file as input for subsequent images
                 current_lys_in = output_file
 
-            # Trigger wave animation on successful alignment
-            if hasattr(self, 'wave_widget') and self.wave_widget:
-                print("DEBUG: Triggering wave animation")
-                self.wave_widget.trigger_alignment_animation()
-            else:
-                print("DEBUG: Wave widget not found or not set")
+            # Trigger wave animation on successful alignment (DISABLED)
+            # if hasattr(self, 'wave_widget') and self.wave_widget:
+            #     print("DEBUG: Triggering wave animation")
+            #     self.wave_widget.trigger_alignment_animation()
+            # else:
+            #     print("DEBUG: Wave widget not found or not set")
 
         except Exception as e:
             logger.log_exception(e, "running alignment")

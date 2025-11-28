@@ -455,6 +455,8 @@ class CosineWaveWidget(QtWidgets.QWidget):
         self.animation_start_time = 0.0  # Time when animation started
         self.deceleration_start_time = 0.0  # Time when deceleration started
         self.deceleration_start_speed = 0.0  # Speed when deceleration started
+        self.deceleration_start_phase = 0.0  # Phase when deceleration started
+        self.deceleration_target_addition = 0.0  # How much to add to reach 2π
         self.target_cycles = 0  # Number of cycles to complete for triggered animation
         self.completed_cycles = 0  # Number of cycles completed
 
@@ -466,8 +468,8 @@ class CosineWaveWidget(QtWidgets.QWidget):
         self.max_speed = 1.0  # Maximum speed multiplier (hover)
 
         # Triggered animation settings (on alignment complete)
-        self.triggered_acceleration_duration = 1.5 / 4.0  # 4x faster acceleration
-        self.triggered_max_speed = 4.0  # 4x speed multiplier
+        self.triggered_acceleration_duration = (1.5 / 4.0) * 0.75  # 75% of original (0.28125s)
+        self.triggered_max_speed = 4.0 / 0.75  # Speed up to compensate (5.33x)
 
         # Animation timer
         self.timer = QtCore.QTimer()
@@ -554,30 +556,43 @@ class CosineWaveWidget(QtWidgets.QWidget):
                         self.is_returning = True
                         self.deceleration_start_time = time.time()
                         self.deceleration_start_speed = self.current_speed
+                        # Record where we are and calculate how much to roll forward to reach 2π
+                        self.phase_offset = self.phase_offset % (2 * 3.14159)
+                        self.deceleration_start_phase = self.phase_offset
+                        self.deceleration_target_addition = (2 * 3.14159) - self.phase_offset
+                        self.update()
+                        return  # Exit early, next frame will handle deceleration
 
                 self.phase_offset = self.phase_offset % (2 * 3.14159)
                 self.update()
 
             elif self.is_returning:
-                # Decelerate at same rate as acceleration
+                # Decelerate while rolling forward to complete the cycle
                 decel_elapsed = time.time() - self.deceleration_start_time
 
                 if decel_elapsed < self.triggered_acceleration_duration:
+                    # Decelerate with cubic ease-out
                     progress = decel_elapsed / self.triggered_acceleration_duration
                     ease_out = 1.0 - ((1.0 - progress) ** 3)
-                    self.current_speed = self.deceleration_start_speed * (1.0 - ease_out)
-                else:
-                    self.current_speed = 0.0
 
-                self.phase_offset += self.base_phase_increment * self.current_speed
+                    # Speed decreases from deceleration_start_speed to 0
+                    self.current_speed = self.deceleration_start_speed * (1.0 - ease_out)
+
+                    # Roll forward smoothly from start phase toward 2π
+                    self.phase_offset = self.deceleration_start_phase + (self.deceleration_target_addition * ease_out)
+                else:
+                    # Deceleration complete
+                    self.current_speed = 0.0
+                    self.phase_offset = 2 * 3.14159  # Exactly at cycle completion
 
                 # Check if deceleration has completed
                 if decel_elapsed >= self.triggered_acceleration_duration:
-                    self.phase_offset = 0.0
+                    self.phase_offset = 0.0  # Reset to 0 (visually same as 2π)
                     self.current_speed = 0.0
                     self.is_returning = False
                     self.is_triggered = False
                     self.timer.stop()
+
                 self.update()
 
         elif self.is_animating:

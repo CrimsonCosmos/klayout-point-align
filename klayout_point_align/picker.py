@@ -60,6 +60,8 @@ class _ImagePickerWidget(object):
         self.points: List[Tuple[float, float]] = []  # centered coords (+y up)
         self.saved = False
         self._panning_with_space = False
+        self._panning_with_right = False
+        self._last_pan_pos = None
 
         self.app = QtWidgets.QApplication.instance() or QtWidgets.QApplication([])
 
@@ -83,6 +85,8 @@ class _ImagePickerWidget(object):
 
         # Create central widget layout
         layout = QtWidgets.QVBoxLayout(self.dialog)
+        layout.setContentsMargins(0, 0, 0, 0)
+        layout.setSpacing(0)
 
         # ---- Scene & View ----
         self.scene = QtWidgets.QGraphicsScene()
@@ -94,10 +98,85 @@ class _ImagePickerWidget(object):
         self.view.setDragMode(QtWidgets.QGraphicsView.NoDrag)
         self.view.wheelEvent = self._on_wheel
         self.view.mousePressEvent = self._on_mouse_press
+        self.view.mouseMoveEvent = self._on_mouse_move
         self.view.mouseReleaseEvent = self._on_mouse_release
         self.view.setCursor(QtCore.Qt.CrossCursor)
 
         layout.addWidget(self.view)
+
+        # ---- Create floating overlay controls panel (top-right) ----
+        # Create as child of dialog for absolute positioning
+        self.controls_panel = QtWidgets.QGroupBox("Display (↑↓ ←→)", self.dialog)
+        self.controls_panel.setMaximumWidth(220)
+        self.controls_panel.setStyleSheet("""
+            QGroupBox {
+                background-color: rgba(240, 240, 240, 220);
+                border: 2px solid #999;
+                border-radius: 4px;
+                margin-top: 6px;
+                padding-top: 8px;
+                font-size: 8pt;
+                font-weight: bold;
+            }
+            QGroupBox::title {
+                subcontrol-origin: margin;
+                left: 8px;
+                padding: 0 3px;
+            }
+        """)
+        controls_layout = QtWidgets.QFormLayout(self.controls_panel)
+        controls_layout.setContentsMargins(6, 4, 6, 6)
+        controls_layout.setSpacing(2)
+        controls_layout.setLabelAlignment(QtCore.Qt.AlignRight)
+
+        # Helper to create compact slider row
+        def create_compact_slider(label, range_min, range_max, default_val, label_text):
+            slider = QtWidgets.QSlider(QtCore.Qt.Horizontal)
+            slider.setRange(range_min, range_max)
+            slider.setValue(default_val)
+            slider.setMaximumWidth(130)
+            value_label = QtWidgets.QLabel(label_text)
+            value_label.setMinimumWidth(30)
+            value_label.setAlignment(QtCore.Qt.AlignRight)
+            value_label.setStyleSheet("font-size: 8pt;")
+            row = QtWidgets.QHBoxLayout()
+            row.setContentsMargins(0, 0, 0, 0)
+            row.setSpacing(4)
+            row.addWidget(slider)
+            row.addWidget(value_label)
+            label_widget = QtWidgets.QLabel(label)
+            label_widget.setStyleSheet("font-size: 8pt;")
+            controls_layout.addRow(label_widget, row)
+            return slider, value_label
+
+        # Create all sliders
+        self.brightness_slider, self.brightness_label = create_compact_slider("Bright:", -100, 100, 0, "0")
+        self.contrast_slider, self.contrast_label = create_compact_slider("Contrast:", -100, 100, 0, "0")
+        self.gamma_slider, self.gamma_label = create_compact_slider("Gamma:", 30, 300, 100, "1.00")
+        self.red_slider, self.red_label = create_compact_slider("Red:", 0, 200, 100, "1.00")
+        self.green_slider, self.green_label = create_compact_slider("Green:", 0, 200, 100, "1.00")
+        self.blue_slider, self.blue_label = create_compact_slider("Blue:", 0, 200, 100, "1.00")
+
+        # Position the panel at top-right corner
+        self.controls_panel.move(10, 10)
+        self.controls_panel.raise_()  # Bring to front
+        self.controls_panel.show()
+
+        # Connect sliders
+        self.brightness_slider.valueChanged.connect(self._update_display)
+        self.contrast_slider.valueChanged.connect(self._update_display)
+        self.gamma_slider.valueChanged.connect(self._update_display)
+        self.red_slider.valueChanged.connect(self._update_display)
+        self.green_slider.valueChanged.connect(self._update_display)
+        self.blue_slider.valueChanged.connect(self._update_display)
+
+        # Force panel to resize to fit all sliders
+        self.controls_panel.adjustSize()
+
+        # Track which slider is focused for keyboard control
+        self.focused_slider_index = 0
+        self.sliders = [self.brightness_slider, self.contrast_slider, self.gamma_slider,
+                        self.red_slider, self.green_slider, self.blue_slider]
 
         # ---- Status label (instead of statusBar) ----
         self.status_label = QtWidgets.QLabel()
@@ -134,7 +213,7 @@ class _ImagePickerWidget(object):
 
     # ----------------- Helpers -----------------
     def _update_status(self, msg: str | None = None):
-        base = "Click to add points (TL, TR, BL, BR). Backspace=undo, S=save, Q/Esc=cancel, Wheel=zoom, Space-drag=pan, F=fit, R=reset."
+        base = "Left-click to add points (TL, TR, BL, BR). Right-click to pan. Backspace=undo, S=save, Q/Esc=cancel, Wheel=zoom, F=fit, R=reset."
         if msg:
             self.status_label.setText(f"{base}  |  {msg}")
         else:
@@ -211,7 +290,16 @@ class _ImagePickerWidget(object):
 
     def _on_mouse_press(self, event):
         QtCore = self._QtCore
-        if event.button() == QtCore.Qt.RightButton or event.button() == QtCore.Qt.MiddleButton or (event.button() == QtCore.Qt.LeftButton and self._panning_with_space):
+
+        # Right-click panning (manual implementation)
+        if event.button() == QtCore.Qt.RightButton:
+            self._panning_with_right = True
+            self._last_pan_pos = event.pos()
+            self.view.viewport().setCursor(QtCore.Qt.ClosedHandCursor)
+            return
+
+        # Middle-click or Space+Left-click panning (Qt's built-in drag mode)
+        if event.button() == QtCore.Qt.MiddleButton or (event.button() == QtCore.Qt.LeftButton and self._panning_with_space):
             self.view.setDragMode(self._QtWidgets.QGraphicsView.ScrollHandDrag)
             self.view.viewport().setCursor(QtCore.Qt.ClosedHandCursor)
             return self._QtWidgets.QGraphicsView.mousePressEvent(self.view, event)
@@ -234,7 +322,32 @@ class _ImagePickerWidget(object):
 
         return self._QtWidgets.QGraphicsView.mousePressEvent(self.view, event)
 
+    def _on_mouse_move(self, event):
+        # Handle right-click panning
+        if self._panning_with_right and self._last_pan_pos is not None:
+            delta = event.pos() - self._last_pan_pos
+            self._last_pan_pos = event.pos()
+
+            # Get the current scrollbar values
+            h_bar = self.view.horizontalScrollBar()
+            v_bar = self.view.verticalScrollBar()
+
+            # Pan by adjusting scrollbar positions (inverted delta for natural feel)
+            h_bar.setValue(h_bar.value() - delta.x())
+            v_bar.setValue(v_bar.value() - delta.y())
+            return
+
+        return self._QtWidgets.QGraphicsView.mouseMoveEvent(self.view, event)
+
     def _on_mouse_release(self, event):
+        # Handle right-click panning release
+        if event.button() == self._QtCore.Qt.RightButton:
+            self._panning_with_right = False
+            self._last_pan_pos = None
+            self.view.viewport().setCursor(self._QtCore.Qt.CrossCursor)
+            return
+
+        # Handle middle-click or Space+Left-click panning release
         if self.view.dragMode() == self._QtWidgets.QGraphicsView.ScrollHandDrag:
             self.view.setDragMode(self._QtWidgets.QGraphicsView.NoDrag)
             self.view.viewport().setCursor(self._QtCore.Qt.CrossCursor)
@@ -243,6 +356,33 @@ class _ImagePickerWidget(object):
     def _on_key(self, event):
         QtCore = self._QtCore
         k = event.key()
+
+        # Arrow key navigation for sliders
+        if k == QtCore.Qt.Key_Up:
+            # Move to previous slider
+            self.focused_slider_index = (self.focused_slider_index - 1) % len(self.sliders)
+            self.sliders[self.focused_slider_index].setFocus()
+            event.accept()
+            return
+        elif k == QtCore.Qt.Key_Down:
+            # Move to next slider
+            self.focused_slider_index = (self.focused_slider_index + 1) % len(self.sliders)
+            self.sliders[self.focused_slider_index].setFocus()
+            event.accept()
+            return
+        elif k == QtCore.Qt.Key_Left:
+            # Decrease current slider value
+            current_slider = self.sliders[self.focused_slider_index]
+            current_slider.setValue(current_slider.value() - 1)
+            event.accept()
+            return
+        elif k == QtCore.Qt.Key_Right:
+            # Increase current slider value
+            current_slider = self.sliders[self.focused_slider_index]
+            current_slider.setValue(current_slider.value() + 1)
+            event.accept()
+            return
+
         if k == QtCore.Qt.Key_Backspace and self.points:
             self.points.pop()
             self._redraw_points()
@@ -272,13 +412,106 @@ class _ImagePickerWidget(object):
             self.view.setDragMode(self._QtWidgets.QGraphicsView.NoDrag)
             self.view.viewport().setCursor(self._QtCore.Qt.CrossCursor)
 
+    def _update_display(self):
+        """Apply brightness/contrast/gamma/RGB adjustments to displayed image (not saved image)."""
+        import numpy as np
+
+        brightness = self.brightness_slider.value()  # -100 to +100
+        contrast = self.contrast_slider.value() / 100.0  # -1.0 to +1.0
+        gamma = self.gamma_slider.value() / 100.0  # 0.3 to 3.0
+        red_mult = self.red_slider.value() / 100.0  # 0 to 2.0
+        green_mult = self.green_slider.value() / 100.0  # 0 to 2.0
+        blue_mult = self.blue_slider.value() / 100.0  # 0 to 2.0
+
+        # Update labels
+        self.brightness_label.setText(str(brightness))
+        self.contrast_label.setText(str(self.contrast_slider.value()))
+        self.gamma_label.setText(f"{gamma:.2f}")
+        self.red_label.setText(f"{red_mult:.2f}")
+        self.green_label.setText(f"{green_mult:.2f}")
+        self.blue_label.setText(f"{blue_mult:.2f}")
+
+        # Convert original QImage to 32-bit ARGB format for fast manipulation
+        QtGui = self._QtGui
+        adjusted = self._img.convertToFormat(QtGui.QImage.Format_ARGB32)
+
+        # Get direct pointer to pixel data
+        bits = adjusted.bits()
+        # Note: setsize() not needed for memoryview objects in modern PySide6
+
+        # Use numpy for fast vectorized operations
+        arr = np.frombuffer(bits, dtype=np.uint8).reshape((adjusted.height(), adjusted.width(), 4))
+
+        # Apply brightness/contrast/gamma/RGB to RGB channels (not alpha)
+        rgb = arr[:, :, :3].astype(np.float32)
+
+        # Apply contrast (scale around midpoint 127.5)
+        if contrast != 0:
+            # Contrast formula: (pixel - 127.5) * (1 + contrast) + 127.5
+            rgb = (rgb - 127.5) * (1.0 + contrast) + 127.5
+
+        # Apply brightness (simple addition)
+        rgb += brightness
+
+        # Apply gamma correction (if not 1.0)
+        if abs(gamma - 1.0) > 0.01:
+            # Normalize to 0-1 range, apply gamma, then scale back to 0-255
+            rgb = np.clip(rgb, 0, 255)
+            rgb = 255.0 * np.power(rgb / 255.0, gamma)
+
+        # Apply RGB channel multipliers
+        rgb[:, :, 0] *= red_mult    # Red channel
+        rgb[:, :, 1] *= green_mult  # Green channel
+        rgb[:, :, 2] *= blue_mult   # Blue channel
+
+        # Clip to valid range
+        rgb = np.clip(rgb, 0, 255).astype(np.uint8)
+        arr[:, :, :3] = rgb
+
+        # Update displayed pixmap
+        self._pix = QtGui.QPixmap.fromImage(adjusted)
+        self._pix_item.setPixmap(self._pix)
+
+    def _save_adjusted_image(self):
+        """Save the adjusted image to replace the original, so .lys uses the adjusted version."""
+        import cv2
+        import numpy as np
+        from pathlib import Path
+
+        # Get the current adjusted pixmap
+        adjusted_img = self._pix.toImage()
+
+        # Convert QImage to numpy array
+        bits = adjusted_img.bits()
+        # Note: setsize() not needed for memoryview objects in modern PySide6
+        arr = np.frombuffer(bits, dtype=np.uint8).reshape((adjusted_img.height(), adjusted_img.width(), 4))
+
+        # Convert BGRA to BGR for OpenCV
+        bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
+
+        # Save to the original file path, replacing it with adjusted version
+        # Create backup first
+        img_path = Path(self.img_path)
+        backup_path = img_path.with_suffix(img_path.suffix + '.backup')
+
+        # Only create backup if it doesn't already exist (preserve original)
+        if not backup_path.exists():
+            import shutil
+            shutil.copy2(self.img_path, backup_path)
+
+        # Save adjusted image
+        cv2.imwrite(str(img_path), bgr)
+        return True
+
     def run(self) -> List[Tuple[float, float]]:
         # Use QDialog's built-in exec() - this handles modal dialogs properly
         # and is designed to be created/destroyed repeatedly
         result = self.dialog.exec()
 
-        # If dialog was accepted (S key or close with all points), return points
+        # If dialog was accepted (S key or close with all points), save adjusted image and return points
         if result == self._QtWidgets.QDialog.Accepted or (len(self.points) == self.max_points and self.saved):
+            # Save the adjusted image to disk
+            self._save_adjusted_image()
             return list(self.points)
         else:
             return []
@@ -288,12 +521,18 @@ class _ImagePickerWidget(object):
 _picker_is_open = False
 
 def pick_points_gui(image_file: str, max_points: int = 4) -> List[Tuple[float, float]]:
+    """
+    Launch interactive point picker GUI.
+
+    Returns:
+        List[Tuple[float, float]] - picked point coordinates (centered)
+    """
     global _picker_is_open
 
     # Prevent opening multiple pickers at once
     if _picker_is_open:
         print("WARNING: Picker already open, skipping...")
-        return []
+        return {'points': [], 'display': {}}
 
     try:
         _picker_is_open = True

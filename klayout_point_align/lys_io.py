@@ -19,6 +19,11 @@ def build_klayout_img_value(H_um_from_px: np.ndarray,
     """
     Build the value string for an 'img::Object' annotation in a .lys file.
     Matches the format used in your existing sessions.
+
+    Args:
+        H_um_from_px: transformation matrix
+        image_file: path to image file
+        px_tl_tr_br_bl: pixel coordinates of corners [TL, TR, BR, BL]
     """
     H = np.asarray(H_um_from_px, dtype=float)
     def row(i): return f"({H[i,0]:.12g},{H[i,1]:.12g},{H[i,2]:.12g})"
@@ -385,6 +390,113 @@ def flip_image_y_axis_in_lys(lys_file: str, image_path: str) -> bool:
 
     except Exception as e:
         print(f"Error flipping image in {lys_file}: {e}")
+        import traceback
+        traceback.print_exc()
+        return False
+
+def update_image_display_properties(
+    lys_file: str,
+    image_file: str,
+    brightness: int = 0,
+    contrast: int = 0,
+    gamma: float = 1.0,
+    red_gain: float = 1.0,
+    green_gain: float = 1.0,
+    blue_gain: float = 1.0
+) -> bool:
+    """
+    Update brightness/contrast/gamma/RGB properties for an image in a .lys file.
+
+    Args:
+        lys_file: Path to .lys file
+        image_file: Path to image (to identify which annotation to update)
+        brightness: -100 to 100
+        contrast: -100 to 100
+        gamma: 0.3 to 3.0
+        red_gain: 0.0 to 2.0
+        green_gain: 0.0 to 2.0
+        blue_gain: 0.0 to 2.0
+
+    Returns:
+        True if successful, False otherwise
+    """
+    try:
+        xml_text = Path(lys_file).read_text(encoding="utf-8")
+        root = ET.fromstring(xml_text)
+
+        # Normalize image path for comparison
+        image_path_normalized = Path(image_file).as_posix()
+
+        # Find the annotation for this image
+        for annotation in root.findall(".//annotation"):
+            class_elem = annotation.find("class")
+            if class_elem is not None and class_elem.text == "img::Object":
+                value_elem = annotation.find("value")
+                if value_elem is not None and value_elem.text:
+                    value_str = value_elem.text
+
+                    # Check if this is the right image
+                    if "file='" not in value_str:
+                        continue
+
+                    start = value_str.index("file='") + 6
+                    end = value_str.index("'", start)
+                    file_path = value_str[start:end].replace('\\\\', '\\')
+                    file_path_normalized = Path(file_path).as_posix()
+
+                    if file_path_normalized != image_path_normalized:
+                        continue
+
+                    # Update brightness
+                    value_str = re.sub(
+                        r'brightness=[^;]+;',
+                        f'brightness={brightness};',
+                        value_str
+                    )
+
+                    # Update contrast
+                    value_str = re.sub(
+                        r'contrast=[^;]+;',
+                        f'contrast={contrast};',
+                        value_str
+                    )
+
+                    # Update gamma
+                    value_str = re.sub(
+                        r'gamma=[^;]+;',
+                        f'gamma={gamma};',
+                        value_str
+                    )
+
+                    # Update RGB gains
+                    value_str = re.sub(
+                        r'red_gain=[^;]+;',
+                        f'red_gain={red_gain};',
+                        value_str
+                    )
+                    value_str = re.sub(
+                        r'green_gain=[^;]+;',
+                        f'green_gain={green_gain};',
+                        value_str
+                    )
+                    value_str = re.sub(
+                        r'blue_gain=[^;]+;',
+                        f'blue_gain={blue_gain};',
+                        value_str
+                    )
+
+                    # Write back
+                    value_elem.text = value_str
+
+                    # Save the modified XML
+                    tree = ET.ElementTree(root)
+                    tree.write(lys_file, encoding='utf-8', xml_declaration=True)
+                    return True
+
+        return False  # Image not found
+
+    except Exception as e:
+        print(f"Error updating image properties: {e}")
         import traceback
         traceback.print_exc()
         return False

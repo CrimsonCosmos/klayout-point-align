@@ -6,7 +6,12 @@
       "Bash(py -m PyInstaller:*)",
       "Bash(py -c:*)",
       "Bash(cat:*)",
-      "Bash(py -m pip:*)"
+      "Bash(py -m pip:*)",
+      "Bash(python align_gui_aqua_qt.py:*)",
+      "Bash(py align_gui_aqua_qt.py:*)",
+      "Bash(findstr:*)",
+      "Bash(python:*)",
+      "Bash(taskkill:*)"
     ],
     "deny": [],
     "ask": []
