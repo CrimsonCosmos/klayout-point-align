@@ -47,6 +47,7 @@ class _ImagePickerWidget(object):
     def __init__(self, img_path: str, max_points: int = 4):
         api, QtCore, QtGui, QtWidgets = _load_qt()
         self._QtCore, self._QtGui, self._QtWidgets = QtCore, QtGui, QtWidgets
+        self._qt_api = api  # Store which Qt binding we're using
 
         # Enable HiDPI scaling before creating QApplication (Qt5/PySide6 only; removed in Qt6)
         if QtWidgets.QApplication.instance() is None:
@@ -437,7 +438,10 @@ class _ImagePickerWidget(object):
 
         # Get direct pointer to pixel data
         bits = adjusted.bits()
-        # Note: setsize() not needed for memoryview objects in modern PySide6
+        # PyQt6 requires setsize() to be called on voidptr before using it
+        # Check if setsize() method exists (PyQt6) or if we need it
+        if hasattr(bits, 'setsize'):
+            bits.setsize(adjusted.height() * adjusted.width() * 4)
 
         # Use numpy for fast vectorized operations
         arr = np.frombuffer(bits, dtype=np.uint8).reshape((adjusted.height(), adjusted.width(), 4))
