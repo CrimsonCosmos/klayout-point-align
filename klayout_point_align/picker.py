@@ -8,9 +8,16 @@ import numpy as np
 try:
     import cv2
     HAS_CV2 = True
-except ImportError:
+    print(f"OpenCV imported successfully: {cv2.__version__}")
+except ImportError as e:
     HAS_CV2 = False
-    print("Warning: OpenCV (cv2) not available. Adjusted images will not be saved.")
+    print(f"Warning: OpenCV (cv2) not available. Adjusted images will not be saved.")
+    print(f"Import error details: {e}")
+except Exception as e:
+    HAS_CV2 = False
+    print(f"Warning: OpenCV (cv2) failed to load due to: {e}")
+    import traceback
+    traceback.print_exc()
 
 # Mouse-wheel zoom strength:
 # Previously 1.32. To make scrolling feel ~175% as strong, we scaled (step-1) by 1.75:
