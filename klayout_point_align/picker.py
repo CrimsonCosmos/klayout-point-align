@@ -478,34 +478,45 @@ class _ImagePickerWidget(object):
 
     def _save_adjusted_image(self):
         """Save the adjusted image to replace the original, so .lys uses the adjusted version."""
-        import cv2
-        import numpy as np
-        from pathlib import Path
+        try:
+            import cv2
+            import numpy as np
+            from pathlib import Path
 
-        # Get the current adjusted pixmap
-        adjusted_img = self._pix.toImage()
+            # Get the current adjusted pixmap
+            adjusted_img = self._pix.toImage()
 
-        # Convert QImage to numpy array
-        bits = adjusted_img.bits()
-        # Note: setsize() not needed for memoryview objects in modern PySide6
-        arr = np.frombuffer(bits, dtype=np.uint8).reshape((adjusted_img.height(), adjusted_img.width(), 4))
+            # Convert QImage to numpy array
+            bits = adjusted_img.bits()
+            # PyQt6 requires setsize() to be called on voidptr before using it
+            if hasattr(bits, 'setsize'):
+                bits.setsize(adjusted_img.height() * adjusted_img.width() * 4)
+            arr = np.frombuffer(bits, dtype=np.uint8).reshape((adjusted_img.height(), adjusted_img.width(), 4))
 
-        # Convert BGRA to BGR for OpenCV
-        bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
+            # Convert BGRA to BGR for OpenCV
+            bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
 
-        # Save to the original file path, replacing it with adjusted version
-        # Create backup first
-        img_path = Path(self.img_path)
-        backup_path = img_path.with_suffix(img_path.suffix + '.backup')
+            # Save to the original file path, replacing it with adjusted version
+            # Create backup first
+            img_path = Path(self.img_path)
+            backup_path = img_path.with_suffix(img_path.suffix + '.backup')
 
-        # Only create backup if it doesn't already exist (preserve original)
-        if not backup_path.exists():
-            import shutil
-            shutil.copy2(self.img_path, backup_path)
+            # Only create backup if it doesn't already exist (preserve original)
+            if not backup_path.exists():
+                import shutil
+                shutil.copy2(self.img_path, backup_path)
 
-        # Save adjusted image
-        cv2.imwrite(str(img_path), bgr)
-        return True
+            # Save adjusted image
+            cv2.imwrite(str(img_path), bgr)
+            return True
+        except ImportError as e:
+            # If cv2 isn't available, show error but don't crash
+            print(f"Warning: Could not save adjusted image - {e}")
+            print("Continuing without saving adjusted image...")
+            return False
+        except Exception as e:
+            print(f"Error saving adjusted image: {e}")
+            return False
 
     def run(self) -> List[Tuple[float, float]]:
         # Use QDialog's built-in exec() - this handles modal dialogs properly
