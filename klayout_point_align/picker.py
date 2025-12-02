@@ -502,8 +502,9 @@ class _ImagePickerWidget(object):
                 bits.setsize(adjusted_img.height() * adjusted_img.width() * 4)
             arr = np.frombuffer(bits, dtype=np.uint8).reshape((adjusted_img.height(), adjusted_img.width(), 4))
 
-            # Convert BGRA to BGR for OpenCV
-            bgr = cv2.cvtColor(arr, cv2.COLOR_BGRA2BGR)
+            # QImage Format_ARGB32 is in BGRA order in memory (little-endian)
+            # Extract BGR channels (skip alpha channel at index 3)
+            bgr = arr[:, :, :3]  # Take only BGR channels, drop alpha
 
             # Save to the original file path, replacing it with adjusted version
             # Create backup first
