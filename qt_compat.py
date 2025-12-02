@@ -72,6 +72,10 @@ except ModuleNotFoundError:
             _Qt.Key_F = _Qt.Key.Key_F
             _Qt.Key_R = _Qt.Key.Key_R
             _Qt.Key_Space = _Qt.Key.Key_Space
+            _Qt.Key_Up = _Qt.Key.Key_Up
+            _Qt.Key_Down = _Qt.Key.Key_Down
+            _Qt.Key_Left = _Qt.Key.Key_Left
+            _Qt.Key_Right = _Qt.Key.Key_Right
 
         # Cursor shapes
         if not hasattr(_Qt, 'PointingHandCursor'):
@@ -314,6 +318,14 @@ except ModuleNotFoundError:
         _QP = QtGui.QPainter
         _QP.Antialiasing = getattr(_QP, 'Antialiasing', _QP.RenderHint.Antialiasing)
         _QP.SmoothPixmapTransform = getattr(_QP, 'SmoothPixmapTransform', _QP.RenderHint.SmoothPixmapTransform)
+    except Exception:
+        pass
+
+    try:
+        _QI = QtGui.QImage
+        _QI.Format_ARGB32 = getattr(_QI, 'Format_ARGB32', _QI.Format.Format_ARGB32)
+        _QI.Format_RGB32 = getattr(_QI, 'Format_RGB32', _QI.Format.Format_RGB32)
+        _QI.Format_RGB888 = getattr(_QI, 'Format_RGB888', _QI.Format.Format_RGB888)
     except Exception:
         pass
 
