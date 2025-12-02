@@ -2,6 +2,15 @@
 from __future__ import annotations
 from pathlib import Path
 from typing import List, Tuple
+import numpy as np
+
+# Try to import cv2 - needed for saving adjusted images
+try:
+    import cv2
+    HAS_CV2 = True
+except ImportError:
+    HAS_CV2 = False
+    print("Warning: OpenCV (cv2) not available. Adjusted images will not be saved.")
 
 # Mouse-wheel zoom strength:
 # Previously 1.32. To make scrolling feel ~175% as strong, we scaled (step-1) by 1.75:
@@ -415,8 +424,6 @@ class _ImagePickerWidget(object):
 
     def _update_display(self):
         """Apply brightness/contrast/gamma/RGB adjustments to displayed image (not saved image)."""
-        import numpy as np
-
         brightness = self.brightness_slider.value()  # -100 to +100
         contrast = self.contrast_slider.value() / 100.0  # -1.0 to +1.0
         gamma = self.gamma_slider.value() / 100.0  # 0.3 to 3.0
@@ -478,10 +485,12 @@ class _ImagePickerWidget(object):
 
     def _save_adjusted_image(self):
         """Save the adjusted image to replace the original, so .lys uses the adjusted version."""
+        if not HAS_CV2:
+            print("Warning: OpenCV not available - cannot save adjusted image")
+            return False
+
         try:
-            import cv2
-            import numpy as np
-            from pathlib import Path
+            import shutil
 
             # Get the current adjusted pixmap
             adjusted_img = self._pix.toImage()
@@ -503,19 +512,15 @@ class _ImagePickerWidget(object):
 
             # Only create backup if it doesn't already exist (preserve original)
             if not backup_path.exists():
-                import shutil
                 shutil.copy2(self.img_path, backup_path)
 
             # Save adjusted image
             cv2.imwrite(str(img_path), bgr)
             return True
-        except ImportError as e:
-            # If cv2 isn't available, show error but don't crash
-            print(f"Warning: Could not save adjusted image - {e}")
-            print("Continuing without saving adjusted image...")
-            return False
         except Exception as e:
             print(f"Error saving adjusted image: {e}")
+            import traceback
+            traceback.print_exc()
             return False
 
     def run(self) -> List[Tuple[float, float]]:
