@@ -174,6 +174,13 @@ except ModuleNotFoundError:
         pass
 
     try:
+        _QD = QtWidgets.QDialog
+        _QD.Accepted = getattr(_QD, 'Accepted', _QD.DialogCode.Accepted)
+        _QD.Rejected = getattr(_QD, 'Rejected', _QD.DialogCode.Rejected)
+    except Exception:
+        pass
+
+    try:
         _TW = QtWidgets.QTabWidget
         _TW.North = getattr(_TW, 'North', _TW.TabPosition.North)
         _TW.South = getattr(_TW, 'South', _TW.TabPosition.South)
