@@ -485,15 +485,19 @@ class _ImagePickerWidget(object):
 
     def _save_adjusted_image(self):
         """Save the adjusted image to replace the original, so .lys uses the adjusted version."""
+        print(f"_save_adjusted_image called for: {self.img_path}")
+
         if not HAS_CV2:
             print("Warning: OpenCV not available - cannot save adjusted image")
             return False
 
         try:
             import shutil
+            print(f"Starting image save process...")
 
             # Get the current adjusted pixmap
             adjusted_img = self._pix.toImage()
+            print(f"Got adjusted image: {adjusted_img.width()}x{adjusted_img.height()}")
 
             # Convert QImage to numpy array
             bits = adjusted_img.bits()
@@ -510,13 +514,21 @@ class _ImagePickerWidget(object):
             # Create backup first
             img_path = Path(self.img_path)
             backup_path = img_path.with_suffix(img_path.suffix + '.backup')
+            print(f"Image path: {img_path}")
+            print(f"Backup path: {backup_path}")
 
             # Only create backup if it doesn't already exist (preserve original)
             if not backup_path.exists():
+                print(f"Creating backup...")
                 shutil.copy2(self.img_path, backup_path)
+                print(f"Backup created at: {backup_path}")
+            else:
+                print(f"Backup already exists, skipping")
 
             # Save adjusted image
-            cv2.imwrite(str(img_path), bgr)
+            print(f"Saving adjusted image to: {img_path}")
+            success = cv2.imwrite(str(img_path), bgr)
+            print(f"cv2.imwrite returned: {success}")
             return True
         except Exception as e:
             print(f"Error saving adjusted image: {e}")
@@ -528,13 +540,20 @@ class _ImagePickerWidget(object):
         # Use QDialog's built-in exec() - this handles modal dialogs properly
         # and is designed to be created/destroyed repeatedly
         result = self.dialog.exec()
+        print(f"Dialog result: {result}")
+        print(f"QDialog.Accepted value: {self._QtWidgets.QDialog.Accepted}")
+        print(f"Number of points: {len(self.points)}")
+        print(f"Saved flag: {self.saved}")
 
         # If dialog was accepted (S key or close with all points), save adjusted image and return points
         if result == self._QtWidgets.QDialog.Accepted or (len(self.points) == self.max_points and self.saved):
+            print("Condition met - calling _save_adjusted_image()")
             # Save the adjusted image to disk
-            self._save_adjusted_image()
+            save_success = self._save_adjusted_image()
+            print(f"Save result: {save_success}")
             return list(self.points)
         else:
+            print("Condition NOT met - returning empty list")
             return []
 
 
