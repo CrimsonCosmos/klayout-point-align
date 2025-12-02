@@ -4,20 +4,36 @@ from pathlib import Path
 from typing import List, Tuple
 import numpy as np
 
-# Try to import cv2 - needed for saving adjusted images
-try:
-    import cv2
-    HAS_CV2 = True
-    print(f"OpenCV imported successfully: {cv2.__version__}")
-except ImportError as e:
-    HAS_CV2 = False
-    print(f"Warning: OpenCV (cv2) not available. Adjusted images will not be saved.")
-    print(f"Import error details: {e}")
-except Exception as e:
-    HAS_CV2 = False
-    print(f"Warning: OpenCV (cv2) failed to load due to: {e}")
-    import traceback
-    traceback.print_exc()
+# cv2 will be imported lazily when needed (not at module load time)
+# This avoids import errors when the package is first loaded
+HAS_CV2 = None  # Tri-state: None = not checked yet, True = available, False = not available
+_cv2_module = None  # Cache the module once imported
+
+def _try_import_cv2():
+    """Lazy import of cv2. Returns (success: bool, cv2_module or None)."""
+    global HAS_CV2, _cv2_module
+
+    if HAS_CV2 is not None:
+        # Already checked
+        return HAS_CV2, _cv2_module
+
+    try:
+        import cv2
+        HAS_CV2 = True
+        _cv2_module = cv2
+        print(f"OpenCV imported successfully: {cv2.__version__}")
+        return True, cv2
+    except ImportError as e:
+        HAS_CV2 = False
+        print(f"Warning: OpenCV (cv2) not available. Adjusted images will not be saved.")
+        print(f"Import error: {e}")
+        return False, None
+    except Exception as e:
+        HAS_CV2 = False
+        print(f"Error loading OpenCV: {e}")
+        import traceback
+        traceback.print_exc()
+        return False, None
 
 # Mouse-wheel zoom strength:
 # Previously 1.32. To make scrolling feel ~175% as strong, we scaled (step-1) by 1.75:
@@ -494,7 +510,9 @@ class _ImagePickerWidget(object):
         """Save the adjusted image to replace the original, so .lys uses the adjusted version."""
         print(f"_save_adjusted_image called for: {self.img_path}")
 
-        if not HAS_CV2:
+        # Try to import cv2 (lazy import)
+        has_cv2, cv2 = _try_import_cv2()
+        if not has_cv2:
             print("Warning: OpenCV not available - cannot save adjusted image")
             return False
 
