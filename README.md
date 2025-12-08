@@ -12,13 +12,21 @@ b) add more features specific to PW Group and possibly outside labs was well.
 The reason PointAlign was originally needed is because after a 2-D material is created in the lab, it often needs to have contacts deposited to measure any interesting condensed matter properties. To fabricate the contacts requires a 2-D Computer Aided Design on KLayout, and to model the contacts in the correct spot requires the image of the 2-D material to be properly aligned with the .gds design file.
 
 
-To download the newest version, go to Versions https://github.com/wanglabq/KlayoutAutoAlign/releases
+## Download
 
+To download the newest version, go to [Releases](https://github.com/CrimsonCosmos/klayout-point-align/releases)
 
-To see future updates, go to the Wiki Page To-Dos https://github.com/wanglabq/KlayoutAutoAlign/wiki
+Or download directly from [winterns.com/klayout](https://winterns.com/klayout)
 
+## Roadmap
 
-To contribute to the project, email Pengjie Wang pengjiew@illinois.edu
+To see future updates and planned features, see [ROADMAP.md](ROADMAP.md)
+
+## Contributing
+
+This project was originally created at Wang Lab Group at the University of Illinois Urbana Champaign Materials Research Lab in 2025.
+
+For questions or contributions, contact Dylan Gehl at dylan@winterns.com
 
 
 
