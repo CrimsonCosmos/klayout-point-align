@@ -1,4 +1,4 @@
-﻿build/
+build/
 dist/
 __pycache__/
 *.spec
@@ -9,3 +9,24 @@ __pycache__/
 venv/
 env/
 nul
+
+# AI assistant files
+Claude.md
+.claude/
+
+# Debug logs
+*.log
+
+# User preferences (contain local paths)
+align_gui_prefs.json
+align_tab_prefs.json
+gui_prefs.json
+
+# Temp files
+*_temp.*
+
+# Build/distribution artifacts
+DISTRIBUTION_READY.txt
+
+# Session backups
+lys_sessions/backups/
